@@ -15,7 +15,7 @@ const Title = styled.h1`
   transition: ${(props) => props.theme.transition};
 
   ${md`
-font-size: 4rem;
+    font-size: 4rem;
   `};
 `
 
