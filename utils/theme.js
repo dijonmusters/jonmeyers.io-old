@@ -13,7 +13,7 @@ const lightTheme = {
 
 const darkTheme = {
   ...common,
-  background: 'linear-gradient(to bottom, #0a0a0a, #101010)',
+  background: 'linear-gradient(to bottom, #0d0d0d, #0d0d0d)',
   color: '#e1e1e1',
   muted: '#939393',
   highlight: '#e66ec1',
