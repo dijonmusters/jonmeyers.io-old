@@ -7,6 +7,4 @@ export const sm = (style) =>
   `@media (max-width: ${breakpoints.sm}px) { ${style} }`
 
 export const md = (style) =>
-  `@media (min-width: ${breakpoints.sm + 1}px) and (max-width: ${
-    breakpoints.md
-  }px) { ${style} }`
+  `@media (min-width: ${breakpoints.sm + 1}px) { ${style} }`

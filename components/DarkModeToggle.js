@@ -3,7 +3,7 @@ import styled from 'styled-components'
 import useDarkMode from '../hooks/useDarkMode'
 
 const Container = styled.div`
-  position: fixed;
+  justify-self: flex-end;
   top: 1rem;
   right: 1rem;
   color: ${(props) => props.theme.color};

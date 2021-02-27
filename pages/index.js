@@ -30,8 +30,8 @@ const Subtitle = styled.p`
 const HomePage = () => {
   return (
     <Container>
-      <Title>Jon Meyers</Title>
-      <Subtitle>A place for content</Subtitle>
+      <Title>This should not render</Title>
+      <Subtitle>Broken redirect in next.config.js</Subtitle>
     </Container>
   )
 }
