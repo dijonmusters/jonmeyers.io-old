@@ -1,40 +1,36 @@
-import marked from 'marked'
-import { request, gql } from 'graphql-request'
 import blocksToHtml from '@sanity/block-content-to-html'
+import { client } from '../../../utils/sanity'
 
-const Blog = ({ blog }) => {
-  // const html = marked(blog.content)
-  console.log(blog)
-
+const Post = ({ post }) => {
   return (
     <div>
-      <h2>{blog.title}</h2>
-      {/* <p>{blog.tags.join(', ')}</p> */}
-      <div dangerouslySetInnerHTML={{ __html: blog.html }} />
+      <h2>{post.title}</h2>
+      <div dangerouslySetInnerHTML={{ __html: post.html }} />
     </div>
   )
 }
 
-export default Blog
+export default Post
 
-const ALL_POSTS_QUERY = gql`
-  query {
-    allPost {
-      slug {
-        current
-      }
-    }
+const allSlugsQuery = `
+  *[_type=="post"]{
+    "slug": slug.current,
   }
 `
 
 export const getStaticPaths = async () => {
-  const { allPost } = await request(process.env.SANITY_URL, ALL_POSTS_QUERY)
+  const postSlugs = await client.fetch(allSlugsQuery)
 
-  const paths = allPost.map(({ slug: { current } }) => ({
-    params: {
-      slug: current,
-    },
-  }))
+  const paths = postSlugs.map(({ slug }) => {
+    const [collectionSlug, postSlug] = slug.split('/')
+
+    return {
+      params: {
+        collectionSlug,
+        postSlug,
+      },
+    }
+  })
 
   return {
     paths,
@@ -42,43 +38,30 @@ export const getStaticPaths = async () => {
   }
 }
 
-const POST_QUERY = gql`
-  query($slug: SlugFilter!) {
-    allPost(where: { slug: $slug }, limit: 1) {
-      title
-      bodyRaw
-    }
+const postQuery = `
+  *[_type == 'post' && slug.current == $slug][0]{
+    title,
+    body
   }
 `
 
 export const getStaticProps = async ({ params }) => {
-  const { slug } = params
+  const { collectionSlug, postSlug } = params
+
   const variables = {
-    slug: {
-      current: {
-        eq: slug,
-      },
-    },
+    slug: `${collectionSlug}/${postSlug}`,
   }
 
-  const { allPost } = await request(
-    'https://u3w4h9it.api.sanity.io/v1/graphql/production/default',
-    POST_QUERY,
-    variables
-  )
-
-  const [post] = allPost
-
-  const blog = {
-    ...post,
-    html: blocksToHtml({
-      blocks: post.bodyRaw,
-    }),
-  }
+  const post = await client.fetch(postQuery, variables)
 
   return {
     props: {
-      blog,
+      post: {
+        ...post,
+        html: blocksToHtml({
+          blocks: post.body,
+        }),
+      },
     },
   }
 }

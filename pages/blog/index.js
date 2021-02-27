@@ -6,6 +6,7 @@ import { client } from '../../utils/sanity'
 import Link from '../../components/Link'
 import { useRouter } from 'next/router'
 import { IoIosArrowRoundForward } from 'react-icons/io'
+
 const List = styled.ul`
   list-style: none;
   margin: 0;
@@ -119,7 +120,8 @@ const BlogList = ({ collections }) => {
   const router = useRouter()
 
   const handleNavigation = (slug) => () => {
-    router.push(slug)
+    // TODO! Work this out
+    // router.push(slug)
   }
 
   return (
@@ -130,19 +132,24 @@ const BlogList = ({ collections }) => {
       />
       <List>
         {collections.map(({ slug, title, posts, numberOfPosts }) => (
-          <Blog key={slug} onClick={handleNavigation(slug)}>
-            <Link href={slug}>
+          <Blog
+            key={`/blog/${slug}`}
+            onClick={handleNavigation(`/blog/${slug}`)}
+          >
+            <Link href={`/blog/${slug}`}>
               <Title>{title}</Title>
             </Link>
             <ConnectedBullets>
               {posts.map((post) => (
                 <Bullet>
-                  <HoverLink href={post.slug}>{post.title}</HoverLink>
+                  <HoverLink href={`/blog/${post.slug}`}>
+                    {post.title}
+                  </HoverLink>
                 </Bullet>
               ))}
               {numberOfPosts > 3 && (
                 <Bullet>
-                  <HoverLink href={slug}>
+                  <HoverLink href={`/blog/${slug}`}>
                     {numberOfPosts - 3} more <Arrow />
                   </HoverLink>
                 </Bullet>

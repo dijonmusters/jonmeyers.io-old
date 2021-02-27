@@ -1,39 +1,30 @@
-import marked from 'marked'
-import { request, gql } from 'graphql-request'
-import blocksToHtml from '@sanity/block-content-to-html'
 import { client } from '../../../utils/sanity'
 
-const Collection = ({ blog }) => {
-  // const html = marked(blog.content)
-  console.log(blog)
-
+const Collection = ({ collection: { title, posts } }) => {
   return (
     <div>
-      <h2>{blog.title}</h2>
-      {/* <p>{blog.tags.join(', ')}</p> */}
-      <div dangerouslySetInnerHTML={{ __html: blog.html }} />
+      <h2>{title}</h2>
+      {posts.map((post) => (
+        <p>{post.title}</p>
+      ))}
     </div>
   )
 }
 
-export default Blog
+export default Collection
 
-const ALL_POSTS_QUERY = gql`
-  query {
-    allPost {
-      slug {
-        current
-      }
-    }
+const allSlugsQuery = `
+  *[_type=="collection"]{
+    "slug": slug.current,
   }
 `
 
 export const getStaticPaths = async () => {
-  const { allPost } = await request(process.env.SANITY_URL, ALL_POSTS_QUERY)
+  const collectionSlugs = await client.fetch(allSlugsQuery)
 
-  const paths = allPost.map(({ slug: { current } }) => ({
+  const paths = collectionSlugs.map(({ slug }) => ({
     params: {
-      slug: current,
+      collectionSlug: slug,
     },
   }))
 
@@ -43,43 +34,28 @@ export const getStaticPaths = async () => {
   }
 }
 
-const POST_QUERY = gql`
-  query($slug: SlugFilter!) {
-    allPost(where: { slug: $slug }, limit: 1) {
-      title
-      bodyRaw
-    }
+const collectionQuery = `
+  *[_type == 'collection' && slug.current == $slug][0]{
+    title,
+    "posts": *[_type == 'post' && references(^._id)]{
+      title,
+      "slug": slug.current,
+    },
   }
 `
 
 export const getStaticProps = async ({ params }) => {
-  const { slug } = params
+  const { collectionSlug } = params
+
   const variables = {
-    slug: {
-      current: {
-        eq: slug,
-      },
-    },
+    slug: collectionSlug,
   }
 
-  const { allPost } = await request(
-    'https://u3w4h9it.api.sanity.io/v1/graphql/production/default',
-    POST_QUERY,
-    variables
-  )
-
-  const [post] = allPost
-
-  const blog = {
-    ...post,
-    html: blocksToHtml({
-      blocks: post.bodyRaw,
-    }),
-  }
+  const collection = await client.fetch(collectionQuery, variables)
 
   return {
     props: {
-      blog,
+      collection,
     },
   }
 }
