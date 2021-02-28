@@ -1,9 +1,9 @@
 import styled from 'styled-components'
-import Container from '../../components/Container'
-import { md } from '../../utils/mediaQueries'
-import SEO from '../../components/SEO'
-import { client } from '../../utils/sanity'
-import Link from '../../components/Link'
+import Container from 'components/Container'
+import { md } from 'utils/mediaQueries'
+import SEO from 'components/SEO'
+import { client } from 'utils/sanity'
+import Link from 'components/Link'
 import { useRouter } from 'next/router'
 import { IoIosArrowRoundForward } from 'react-icons/io'
 
@@ -52,6 +52,10 @@ const Title = styled.h2`
   ${md`
     font-size: 2rem;
   `};
+
+  &:hover {
+    cursor: pointer;
+  }
 `
 
 const ConnectedBullets = styled.ul`
@@ -103,8 +107,9 @@ const Bullet = styled.li`
   }
 `
 
-const HoverLink = styled(Link)`
-  display: flex;
+const HoverLink = styled.a`
+  z-index: 1;
+  display: inline-flex;
   align-items: center;
 
   &:hover {
@@ -119,9 +124,10 @@ const Arrow = styled(IoIosArrowRoundForward)`
 const BlogList = ({ collections }) => {
   const router = useRouter()
 
-  const handleNavigation = (slug) => () => {
-    // TODO! Work this out
-    // router.push(slug)
+  const handleNavigation = (slug) => (e) => {
+    e.stopPropagation()
+    e.preventDefault()
+    router.push(slug)
   }
 
   return (
@@ -136,20 +142,18 @@ const BlogList = ({ collections }) => {
             key={`/blog/${slug}`}
             onClick={handleNavigation(`/blog/${slug}`)}
           >
-            <Link href={`/blog/${slug}`}>
-              <Title>{title}</Title>
-            </Link>
+            <Title>{title}</Title>
             <ConnectedBullets>
               {posts.map((post) => (
-                <Bullet>
-                  <HoverLink href={`/blog/${post.slug}`}>
+                <Bullet key={post.slug}>
+                  <HoverLink onClick={handleNavigation(`/blog/${post.slug}`)}>
                     {post.title}
                   </HoverLink>
                 </Bullet>
               ))}
               {numberOfPosts > 3 && (
                 <Bullet>
-                  <HoverLink href={`/blog/${slug}`}>
+                  <HoverLink onClick={handleNavigation(`/blog/${slug}`)}>
                     {numberOfPosts - 3} more <Arrow />
                   </HoverLink>
                 </Bullet>

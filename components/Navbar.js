@@ -1,7 +1,7 @@
 import styled from 'styled-components'
-import { md } from '../utils/mediaQueries'
-import Container from './Container'
-import DarkModeToggle from './DarkModeToggle'
+import { md } from 'utils/mediaQueries'
+import Container from 'components/Container'
+import DarkModeToggle from 'components/DarkModeToggle'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 

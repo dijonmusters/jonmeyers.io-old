@@ -1,9 +1,9 @@
 import styled from 'styled-components'
 import { Normalize } from 'styled-normalize'
-import ThemeProvider from '../context/Theme'
-import DarkModeProvider from '../context/DarkMode'
-import { darkTheme, lightTheme } from '../utils/theme'
-import Navbar from '../components/Navbar'
+import ThemeProvider from 'context/Theme'
+import DarkModeProvider from 'context/DarkMode'
+import { darkTheme, lightTheme } from 'utils/theme'
+import Navbar from 'components/Navbar'
 
 const Container = styled.div`
   background: ${(props) => props.theme.background};

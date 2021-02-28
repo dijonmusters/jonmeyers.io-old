@@ -1,6 +1,6 @@
 import { FiSun, FiMoon } from 'react-icons/fi'
 import styled from 'styled-components'
-import useDarkMode from '../hooks/useDarkMode'
+import useDarkMode from 'hooks/useDarkMode'
 
 const Container = styled.div`
   justify-self: flex-end;

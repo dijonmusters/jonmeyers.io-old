@@ -1,12 +1,56 @@
-import blocksToHtml from '@sanity/block-content-to-html'
-import { client } from '../../../utils/sanity'
+// import blocksToHtml from '@sanity/block-content-to-html'
+import BlockContent from '@sanity/block-content-to-react'
+import { client } from 'utils/sanity'
+import Container from 'components/Container'
+import styled from 'styled-components'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import {
+  materialDark,
+  materialLight,
+} from 'node_modules/react-syntax-highlighter/dist/esm/styles/prism'
+import { nightOwl } from 'node_modules/react-syntax-highlighter/dist/esm/styles/hljs'
+import useDarkMode from 'hooks/useDarkMode'
+
+const Title = styled.h1`
+  margin-top: 4rem;
+  font-size: 3rem;
+`
+
+const Content = styled.div`
+  padding: 2rem;
+  background: ${(props) => props.theme.paper};
+  color: ${(props) => props.theme.ink};
+
+  h2 {
+    font-size: 2rem;
+  }
+`
+
+const Pre = styled.pre`
+  background: transparent;
+`
 
 const Post = ({ post }) => {
+  const { isDarkTheme } = useDarkMode()
+  const serializers = {
+    types: {
+      code: ({ node }) => (
+        <SyntaxHighlighter
+          language={node.language}
+          style={isDarkTheme() ? materialDark : materialLight}
+          showLineNumbers
+        >
+          {node.code}
+        </SyntaxHighlighter>
+      ),
+    },
+  }
+
   return (
-    <div>
-      <h2>{post.title}</h2>
-      <div dangerouslySetInnerHTML={{ __html: post.html }} />
-    </div>
+    <Container>
+      <Title>{post.title}</Title>
+      <BlockContent blocks={post.body} serializers={serializers} />
+    </Container>
   )
 }
 
@@ -56,12 +100,7 @@ export const getStaticProps = async ({ params }) => {
 
   return {
     props: {
-      post: {
-        ...post,
-        html: blocksToHtml({
-          blocks: post.body,
-        }),
-      },
+      post,
     },
   }
 }

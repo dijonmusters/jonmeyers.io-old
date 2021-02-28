@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { md } from '../utils/mediaQueries'
+import { md } from 'utils/mediaQueries'
 
 const Container = styled.div`
   max-width: ${(props) => props.theme.maxWidth};

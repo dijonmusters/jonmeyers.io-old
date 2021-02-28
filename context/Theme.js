@@ -1,7 +1,7 @@
 import { useContext } from 'react'
 import { ThemeProvider } from 'styled-components'
-import { lightTheme, darkTheme } from '../utils/theme'
-import { Context as darkModeContext } from './DarkMode'
+import { lightTheme, darkTheme } from 'utils/theme'
+import { Context as darkModeContext } from 'context/DarkMode'
 
 const App = ({ children }) => {
   const { theme: currentTheme } = useContext(darkModeContext)
