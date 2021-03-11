@@ -149,13 +149,19 @@ const BlogList = ({ collections }) => {
             >
               <Title>{title}</Title>
               <ConnectedBullets>
-                {posts.map((post) => (
-                  <Bullet key={post.slug}>
-                    <HoverLink onClick={handleNavigation(`/blog/${post.slug}`)}>
-                      {post.title}
-                    </HoverLink>
-                  </Bullet>
-                ))}
+                {posts.length > 0 ? (
+                  posts.map((post) => (
+                    <Bullet key={post.slug}>
+                      <HoverLink
+                        onClick={handleNavigation(`/blog/${post.slug}`)}
+                      >
+                        {post.title}
+                      </HoverLink>
+                    </Bullet>
+                  ))
+                ) : (
+                  <Bullet>No posts yet</Bullet>
+                )}
                 {numberOfPosts > 3 && (
                   <Bullet>
                     <HoverLink onClick={handleNavigation(`/blog/${slug}`)}>

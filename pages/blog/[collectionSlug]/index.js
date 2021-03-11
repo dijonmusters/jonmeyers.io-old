@@ -70,7 +70,7 @@ const Collection = ({ collection: { title, description, posts } }) => {
           </Link>
         ))
       ) : (
-        <Fallback>This collection has no posts!</Fallback>
+        <Fallback>No posts yet!</Fallback>
       )}
     </Container>
   )
