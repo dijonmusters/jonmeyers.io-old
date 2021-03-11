@@ -81,7 +81,7 @@ const Post = ({ post }) => {
 
   return (
     <Container>
-      <SEO title={post.title} description="hi" />
+      <SEO title={post.title} description={post.seoDescription} />
       <Breadcrumbs
         title={post.collection.title}
         slug={post.collection.slug.current}
