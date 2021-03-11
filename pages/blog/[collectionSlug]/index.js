@@ -9,6 +9,13 @@ const Title = styled.h1`
   font-size: 3rem;
 `
 
+const Description = styled.p`
+  line-height: 32px;
+  margin: 1.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 200;
+`
+
 const Post = styled.div`
   position: relative;
   font-size: 1.25rem;
@@ -42,17 +49,17 @@ const Text = styled.span`
   margin-left: 2.5rem;
 `
 
-const Centered = styled.p`
+const Fallback = styled.p`
   font-size: 1.25rem;
-  margin-top: 4rem;
-  text-align: center;
+  font-weight: 600;
 `
 
-const Collection = ({ collection: { title, seoDescription, posts } }) => {
+const Collection = ({ collection: { title, description, posts } }) => {
   return (
     <Container>
-      <SEO title={title} description={seoDescription} />
+      <SEO title={title} description={description} />
       <Title>{title}</Title>
+      <Description>{description}</Description>
       {posts.length > 0 ? (
         posts.map((post, i) => (
           <Link href={`/blog/${post.slug}`} key={post.slug}>
@@ -63,7 +70,7 @@ const Collection = ({ collection: { title, seoDescription, posts } }) => {
           </Link>
         ))
       ) : (
-        <Centered>This collection has no posts!</Centered>
+        <Fallback>This collection has no posts!</Fallback>
       )}
     </Container>
   )
@@ -95,7 +102,7 @@ export const getStaticPaths = async () => {
 const collectionQuery = `
   *[_type == 'collection' && slug.current == $slug][0]{
     title,
-    seoDescription,
+    description,
     "posts": *[_type == 'post' && references(^._id)]{
       title,
       "slug": slug.current,
