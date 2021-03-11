@@ -181,7 +181,7 @@ const BlogList = ({ collections }) => {
 }
 
 const query = `
-  *[_type=="collection"]{
+  *[_type == "collection" && isPublished == true]{
     title,
     "slug": slug.current,
     "posts": *[_type=='post' && references(^._id)][0..2]{
