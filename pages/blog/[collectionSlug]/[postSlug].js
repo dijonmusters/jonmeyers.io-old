@@ -46,6 +46,15 @@ const Body = styled(BlockContent)`
     font-style: italic;
     border-left: 5px solid ${(props) => props.theme.highlight};
   }
+
+  a {
+    color: ${(props) => props.theme.highlight};
+  }
+
+  li {
+    line-height: 32px;
+    font-weight: 200;
+  }
 `
 
 const Code = styled.div`

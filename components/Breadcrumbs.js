@@ -9,6 +9,11 @@ const Crumb = styled.span`
   display: flex;
   align-items: center;
   width: fit-content;
+  text-transform: uppercase;
+
+  &:hover {
+    color: ${(props) => props.theme.color};
+  }
 `
 
 const Arrow = styled(IoIosArrowRoundBack)`
@@ -16,17 +21,13 @@ const Arrow = styled(IoIosArrowRoundBack)`
   margin-right: 0.25rem;
 `
 
-const HighlightLink = styled(Link)`
-  text-transform: uppercase;
-`
-
 const Breadcrumbs = ({ title, slug }) => (
-  <HighlightLink href={`/blog/${slug}`}>
+  <Link href={`/blog/${slug}`} hover>
     <Crumb>
       <Arrow />
       {title}
     </Crumb>
-  </HighlightLink>
+  </Link>
 )
 
 export default Breadcrumbs
