@@ -3,6 +3,7 @@ import Container from 'components/Container'
 import Link from 'components/Link'
 import styled from 'styled-components'
 import { md } from 'utils/mediaQueries'
+import SEO from 'components/SEO'
 
 const Title = styled.h1`
   font-size: 3rem;
@@ -41,18 +42,29 @@ const Text = styled.span`
   margin-left: 2.5rem;
 `
 
-const Collection = ({ collection: { title, posts } }) => {
+const Centered = styled.p`
+  font-size: 1.25rem;
+  margin-top: 4rem;
+  text-align: center;
+`
+
+const Collection = ({ collection: { title, seoDescription, posts } }) => {
   return (
     <Container>
+      <SEO title={title} description={seoDescription} />
       <Title>{title}</Title>
-      {posts.map((post, i) => (
-        <Link href={`/blog/${post.slug}`} key={post.slug}>
-          <Post>
-            <Num>{i + 1}.</Num>
-            <Text>{post.title}</Text>
-          </Post>
-        </Link>
-      ))}
+      {posts.length > 0 ? (
+        posts.map((post, i) => (
+          <Link href={`/blog/${post.slug}`} key={post.slug}>
+            <Post>
+              <Num>{i + 1}.</Num>
+              <Text>{post.title}</Text>
+            </Post>
+          </Link>
+        ))
+      ) : (
+        <Centered>This collection has no posts!</Centered>
+      )}
     </Container>
   )
 }
@@ -83,6 +95,7 @@ export const getStaticPaths = async () => {
 const collectionQuery = `
   *[_type == 'collection' && slug.current == $slug][0]{
     title,
+    seoDescription,
     "posts": *[_type == 'post' && references(^._id)]{
       title,
       "slug": slug.current,

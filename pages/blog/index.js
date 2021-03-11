@@ -121,6 +121,10 @@ const Arrow = styled(IoIosArrowRoundForward)`
   font-size: 1.5rem;
 `
 
+const Centered = styled(Title)`
+  text-align: center;
+`
+
 const BlogList = ({ collections }) => {
   const router = useRouter()
 
@@ -137,30 +141,34 @@ const BlogList = ({ collections }) => {
         description="A collection of developer-focused, practical, web development blog posts written by Jon Meyers."
       />
       <List>
-        {collections.map(({ slug, title, posts, numberOfPosts }) => (
-          <Blog
-            key={`/blog/${slug}`}
-            onClick={handleNavigation(`/blog/${slug}`)}
-          >
-            <Title>{title}</Title>
-            <ConnectedBullets>
-              {posts.map((post) => (
-                <Bullet key={post.slug}>
-                  <HoverLink onClick={handleNavigation(`/blog/${post.slug}`)}>
-                    {post.title}
-                  </HoverLink>
-                </Bullet>
-              ))}
-              {numberOfPosts > 3 && (
-                <Bullet>
-                  <HoverLink onClick={handleNavigation(`/blog/${slug}`)}>
-                    {numberOfPosts - 3} more <Arrow />
-                  </HoverLink>
-                </Bullet>
-              )}
-            </ConnectedBullets>
-          </Blog>
-        ))}
+        {collections.length > 0 ? (
+          collections.map(({ slug, title, posts, numberOfPosts }) => (
+            <Blog
+              key={`/blog/${slug}`}
+              onClick={handleNavigation(`/blog/${slug}`)}
+            >
+              <Title>{title}</Title>
+              <ConnectedBullets>
+                {posts.map((post) => (
+                  <Bullet key={post.slug}>
+                    <HoverLink onClick={handleNavigation(`/blog/${post.slug}`)}>
+                      {post.title}
+                    </HoverLink>
+                  </Bullet>
+                ))}
+                {numberOfPosts > 3 && (
+                  <Bullet>
+                    <HoverLink onClick={handleNavigation(`/blog/${slug}`)}>
+                      {numberOfPosts - 3} more <Arrow />
+                    </HoverLink>
+                  </Bullet>
+                )}
+              </ConnectedBullets>
+            </Blog>
+          ))
+        ) : (
+          <Centered>No blog posts!</Centered>
+        )}
       </List>
     </Container>
   )
