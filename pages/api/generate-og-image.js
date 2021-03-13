@@ -1,15 +1,34 @@
-import puppeteer from 'puppeteer'
+import chrome from 'chrome-aws-lambda'
+import puppeteer from 'puppeteer-core'
 
-// easy switching for dev
-const host = 'http://localhost:3000'
-// const host = 'FILL_THIS_IN'
+const isDev = process.env.NODE_ENV === 'development'
+
+const host = isDev ? 'http://localhost:3000' : 'https://jonmeyers.io'
+
+const exePath =
+  process.platform === 'win32'
+    ? 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
+    : '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+
+export const getOptions = async () =>
+  isDev
+    ? {
+        args: [],
+        executablePath: exePath,
+        headless: true,
+      }
+    : {
+        args: chrome.args,
+        executablePath: await chrome.executablePath,
+        headless: chrome.headless,
+      }
 
 module.exports = async (req, res) => {
-  // TODO: add redirect so /og comes to /api/create-og
   const { title } = req.query
 
   try {
-    const browser = await puppeteer.launch()
+    const options = await getOptions()
+    const browser = await puppeteer.launch(options)
     const page = await browser.newPage()
     await page.goto(`${host}/og-image?title=${title}`)
     const logo = await page.$('#og-image')
