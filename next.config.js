@@ -8,6 +8,11 @@ module.exports = {
         destination: '/blog',
         permanent: false,
       },
+      {
+        source: '/og',
+        destination: '/api/generate-og-image',
+        permanent: true,
+      },
     ]
   },
 }

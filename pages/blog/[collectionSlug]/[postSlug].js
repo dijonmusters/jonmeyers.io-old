@@ -63,6 +63,7 @@ const Code = styled.div`
 
 const Post = ({ post }) => {
   const { isDarkTheme } = useDarkMode()
+
   const serializers = {
     types: {
       code: ({ node }) => (
