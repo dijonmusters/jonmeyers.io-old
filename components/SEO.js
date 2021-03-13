@@ -17,7 +17,10 @@ const SEO = ({ title, description }) => {
       {/* OG */}
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={`${host}/og?title=${title}`} />
+      <meta
+        property="og:image"
+        content={`${host}/api/generate-og-image?title=${title}`}
+      />
       <meta property="og:url" content={`${host}/${path}`} />
       <meta name="twitter:card" content="summary_large_image" />
       <meta property="og:site_name" content="jonmeyers.io" />

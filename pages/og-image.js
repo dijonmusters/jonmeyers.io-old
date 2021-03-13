@@ -5,8 +5,8 @@ import TextFit from 'react-textfit'
 
 const Container = styled.div`
   position: relative;
-  width: 1200px; /* put back to 1200 */
-  height: 630px; /* put back to 630 */
+  width: 1200px;
+  height: 630px;
   overflow: hidden;
   background-image: linear-gradient(
       135deg,
@@ -85,7 +85,7 @@ const Panel = styled.div`
   bottom: 1rem;
   background: #111;
   color: #e1e1e1;
-  border-radius: 15px;
+  border-radius: 20px 20px 0 0;
   display: flex;
   overflow: hidden;
   box-shadow: 0 2.8px 2.2px rgba(0, 0, 0, 0.02),
