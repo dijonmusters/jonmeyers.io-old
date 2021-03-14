@@ -79,7 +79,7 @@ const Collection = ({ collection: { title, description, posts } }) => {
 export default Collection
 
 const allSlugsQuery = `
-  *[_type=="collection"]{
+  *[_type=="collection" && isPublished == true]{
     "slug": slug.current,
   }
 `
@@ -103,7 +103,7 @@ const collectionQuery = `
   *[_type == 'collection' && slug.current == $slug][0]{
     title,
     description,
-    "posts": *[_type == 'post' && references(^._id)]{
+    "posts": *[_type == 'post' && references(^._id) && isPublished == true]{
       title,
       "slug": slug.current,
     },

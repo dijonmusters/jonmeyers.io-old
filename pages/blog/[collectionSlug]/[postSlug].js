@@ -96,7 +96,7 @@ const Post = ({ post }) => {
 export default Post
 
 const allSlugsQuery = `
-  *[_type=="post"]{
+  *[_type=="post" && isPublished == true]{
     "slug": slug.current,
   }
 `
