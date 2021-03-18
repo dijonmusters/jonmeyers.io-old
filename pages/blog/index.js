@@ -184,7 +184,7 @@ const query = `
   *[_type == "collection" && isPublished == true]{
     title,
     "slug": slug.current,
-    "posts": *[_type=='post' && references(^._id) && isPublished == true][0..2]{
+    "posts": *[_type=='post' && references(^._id) && isPublished == true] | order(numInCollection, asc) [0..2] {
       title,
       "slug": slug.current,
     },

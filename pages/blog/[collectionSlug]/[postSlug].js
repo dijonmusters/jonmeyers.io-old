@@ -85,7 +85,7 @@ const Post = ({ post }) => {
       <SEO title={post.title} description={post.seoDescription} />
       <Breadcrumbs
         title={post.collection.title}
-        slug={post.collection.slug.current}
+        slug={`/blog/${post.collection.slug.current}`}
       />
       <Title>{post.title}</Title>
       <Body blocks={post.body} serializers={serializers} />

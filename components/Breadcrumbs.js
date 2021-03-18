@@ -22,7 +22,7 @@ const Arrow = styled(IoIosArrowRoundBack)`
 `
 
 const Breadcrumbs = ({ title, slug }) => (
-  <Link href={`/blog/${slug}`} hover>
+  <Link href={slug} hover>
     <Crumb>
       <Arrow />
       {title}

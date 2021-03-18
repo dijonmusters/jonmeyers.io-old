@@ -4,6 +4,7 @@ import Link from 'components/Link'
 import styled from 'styled-components'
 import { md } from 'utils/mediaQueries'
 import SEO from 'components/SEO'
+import Breadcrumbs from 'components/Breadcrumbs'
 
 const Title = styled.h1`
   font-size: 3rem;
@@ -45,7 +46,8 @@ const Num = styled.span`
   color: ${(props) => props.theme.muted3};
 `
 
-const Text = styled.span`
+const Text = styled.p`
+  margin: 0;
   margin-left: 2.5rem;
 `
 
@@ -58,6 +60,7 @@ const Collection = ({ collection: { title, description, posts } }) => {
   return (
     <Container>
       <SEO title={title} description={description} />
+      <Breadcrumbs title="Blog" slug="/blog" />
       <Title>{title}</Title>
       <Description>{description}</Description>
       {posts.length > 0 ? (
@@ -79,7 +82,7 @@ const Collection = ({ collection: { title, description, posts } }) => {
 export default Collection
 
 const allSlugsQuery = `
-  *[_type=="collection" && isPublished == true]{
+  *[_type=="collection" && isPublished == true] {
     "slug": slug.current,
   }
 `
@@ -103,7 +106,7 @@ const collectionQuery = `
   *[_type == 'collection' && slug.current == $slug][0]{
     title,
     description,
-    "posts": *[_type == 'post' && references(^._id) && isPublished == true]{
+    "posts": *[_type == 'post' && references(^._id) && isPublished == true] | order(numInCollection, asc) {
       title,
       "slug": slug.current,
     },
