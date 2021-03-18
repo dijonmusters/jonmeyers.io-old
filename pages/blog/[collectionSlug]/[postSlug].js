@@ -55,6 +55,14 @@ const Body = styled(BlockContent)`
     line-height: 32px;
     font-weight: 200;
   }
+
+  figure {
+    margin: 3rem 0;
+  }
+
+  img {
+    width: 100%;
+  }
 `
 
 const Code = styled.div`
@@ -88,7 +96,13 @@ const Post = ({ post }) => {
         slug={`/blog/${post.collection.slug.current}`}
       />
       <Title>{post.title}</Title>
-      <Body blocks={post.body} serializers={serializers} />
+      <Body
+        blocks={post.body}
+        serializers={serializers}
+        imageOptions={{ w: 800, fit: 'max' }}
+        projectId="u3w4h9it"
+        dataset="production"
+      />
     </Container>
   )
 }
