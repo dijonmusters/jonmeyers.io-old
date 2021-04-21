@@ -54,6 +54,7 @@ export async function generateRss(posts) {
         <link>${BLOG_URL}</link>
         <description>${BLOG_SUBTITLE}</description>
         <language>en</language>
+        <lastBuildDate>${new Date().toString()}</lastBuildDate>
         <atom:link href="${BLOG_URL}" rel="self" type="application/rss+xml"/>
         ${itemsList.join('')}
       </channel>
