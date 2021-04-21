@@ -48,7 +48,6 @@ const postsQuery = `
     seoDescription,
     collection->{
       title,
-      "slug": slug.current,
     }
   }
 `

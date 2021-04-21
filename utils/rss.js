@@ -32,13 +32,14 @@ export async function generateRssItem(post) {
 
   return `
     <item>
-      <guid>${BLOG_URL}/posts/${post.slug}</guid>
-      <url>${BLOG_URL}/posts/${post.slug}</url>
+      <guid>${BLOG_URL}/${post.slug}</guid>
+      <url>${BLOG_URL}/${post.slug}</url>
       <title>${post.title}</title>
       <description>${post.seoDescription}</description>
       <link>${BLOG_URL}/${post.slug}</link>
       <pubDate>${new Date().toString()}</pubDate>
       <content:encoded><![CDATA[${html}]]></content:encoded>
+      <series>${post.collection.title}</series>
     </item>
   `
 }
