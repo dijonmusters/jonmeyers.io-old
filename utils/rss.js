@@ -37,6 +37,7 @@ export async function generateRssItem(post) {
       <title>${post.title}</title>
       <description>${post.seoDescription}</description>
       <link>${BLOG_URL}/${post.slug}</link>
+      <pubDate>${new Date().toString()}</pubDate>
       <content:encoded><![CDATA[${html}]]></content:encoded>
     </item>
   `
