@@ -1,5 +1,8 @@
 import styled from 'styled-components'
 import { md } from 'utils/mediaQueries'
+import { client } from 'utils/sanity'
+import fs from 'fs'
+import { generateRss } from 'utils/rss'
 
 const Container = styled.div`
   flex: 1;
@@ -34,6 +37,31 @@ const HomePage = () => {
       <Subtitle>Broken redirect in next.config.js</Subtitle>
     </Container>
   )
+}
+
+const postsQuery = `
+  *[_type == 'post'] {
+    title,
+    "slug": slug.current,
+    title,
+    body,
+    seoDescription,
+    collection->{
+      title,
+      "slug": slug.current,
+    }
+  }
+`
+
+export const getStaticProps = async () => {
+  const posts = await client.fetch(postsQuery)
+  const rss = await generateRss(posts)
+
+  fs.writeFileSync('./public/rss.xml', rss)
+
+  return {
+    props: {},
+  }
 }
 
 export default HomePage
