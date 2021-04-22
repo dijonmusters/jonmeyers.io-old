@@ -54,7 +54,8 @@ const postsQuery = `
 
 export const getStaticProps = async () => {
   const posts = await client.fetch(postsQuery)
-  const rss = await generateRss(posts)
+  const post = posts[5]
+  const rss = await generateRss([post])
 
   fs.writeFileSync('./public/rss.xml', rss)
 
