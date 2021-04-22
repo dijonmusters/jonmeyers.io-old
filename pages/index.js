@@ -40,7 +40,7 @@ const HomePage = () => {
 }
 
 const postsQuery = `
-  *[_type == 'post' && isPublished == true] {
+  *[_type == 'post' && isPublished == true] | order(numInCollection, asc) {
     title,
     "slug": slug.current,
     title,
