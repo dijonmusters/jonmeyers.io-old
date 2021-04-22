@@ -40,7 +40,7 @@ const HomePage = () => {
 }
 
 const postsQuery = `
-  *[_type == 'post'] {
+  *[_type == 'post' && isPublished == true] {
     title,
     "slug": slug.current,
     title,
