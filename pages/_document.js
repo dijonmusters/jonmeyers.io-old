@@ -63,6 +63,11 @@ export default class MyDocument extends Document {
         <body>
           <Main />
           <NextScript />
+          <script
+            defer
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            data-cf-beacon='{"token": "54b7a727790945f7b9b5e7feaad083f1"}'
+          ></script>
         </body>
       </Html>
     )
