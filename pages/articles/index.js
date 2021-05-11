@@ -32,8 +32,6 @@ const Blog = styled.div`
   `};
 
   &:hover {
-    cursor: pointer;
-
     &::before {
       content: '';
       position: absolute;
@@ -54,6 +52,10 @@ const Title = styled.h2`
   ${md`
     font-size: 2rem;
   `};
+
+  &:hover {
+    cursor: pointer;
+  }
 `
 
 const ConnectedBullets = styled.ul`
@@ -71,6 +73,10 @@ const Bullet = styled.li`
   overflow: hidden;
   text-overflow: ellipsis;
   color: ${(props) => props.theme.muted2};
+
+  &:hover {
+    cursor: pointer;
+  }
 
   ${md`
     font-size: 1rem;
@@ -119,7 +125,7 @@ const Centered = styled(Title)`
   text-align: center;
 `
 
-const BlogList = ({ collections }) => {
+const ArticleList = ({ collections }) => {
   const router = useRouter()
 
   const handleNavigation = (slug) => (e) => {
@@ -196,4 +202,4 @@ export const getStaticProps = async () => {
   }
 }
 
-export default BlogList
+export default ArticleList

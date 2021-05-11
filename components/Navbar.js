@@ -28,6 +28,18 @@ const Navbar = ({ className, href }) => {
             </TextWrapper>
           </Anchor>
         </Link>
+        <Items>
+          <Item>
+            <Link href="/articles">
+              <Anchor>Articles</Anchor>
+            </Link>
+          </Item>
+          <Item>
+            <Link href="/courses">
+              <Anchor>Courses</Anchor>
+            </Link>
+          </Item>
+        </Items>
         <DarkModeToggle />
       </Wrapper>
     </Nav>
@@ -50,7 +62,6 @@ const Wrapper = styled(Container)`
 `
 
 const Anchor = styled.a`
-  flex: 1;
   display: flex;
   align-items: center;
 
@@ -85,7 +96,28 @@ const Subtitle = styled.span`
 `
 
 const DarkmodeButton = styled(DarkModeToggle)`
-  justify-self: flex-end;
+  flex: 0;
+`
+
+const Items = styled.ul`
+  flex: 1;
+  display: flex;
+  list-style: none;
+  justify-content: flex-end;
+  padding: 0 1rem;
+  margin: 0;
+`
+
+const Item = styled.li`
+  padding: 1rem 2rem;
+  font-size: 1.25rem;
+  margin: 0;
+
+  &:hover {
+    background: ${(props) => props.theme.hover};
+    cursor: pointer;
+    text-decoration: underline;
+  }
 `
 
 export default Navbar
