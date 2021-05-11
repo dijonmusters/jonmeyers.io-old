@@ -29,12 +29,12 @@ const Navbar = ({ className, href }) => {
           </Anchor>
         </Link>
         <Items>
-          <Item>
-            <Link href="/articles">
+          <Item isActive={router.pathname === '/blog'}>
+            <Link href="/blog">
               <Anchor>Articles</Anchor>
             </Link>
           </Item>
-          <Item>
+          <Item isActive={router.pathname === '/courses'}>
             <Link href="/courses">
               <Anchor>Courses</Anchor>
             </Link>
@@ -113,11 +113,21 @@ const Item = styled.li`
   font-size: 1.25rem;
   margin: 0;
 
+  & + & {
+    margin-left: 0.25rem;
+  }
+
   &:hover {
     background: ${(props) => props.theme.hover};
     cursor: pointer;
     text-decoration: underline;
   }
+
+  ${({ isActive, theme }) =>
+    isActive &&
+    `
+      background: ${theme.hover};
+    `}
 `
 
 export default Navbar

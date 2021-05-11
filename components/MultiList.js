@@ -172,21 +172,18 @@ const MultiList = ({
   listPath,
   collectionPath,
   individualPath,
-}) => {
-  console.log(collection)
-  return (
-    <Root className={className}>
-      {collection.map((item) => (
-        <Item
-          key={item.title}
-          item={item}
-          listPath={listPath}
-          collectionPath={collectionPath}
-          individualPath={individualPath}
-        />
-      ))}
-    </Root>
-  )
-}
+}) => (
+  <Root className={className}>
+    {collection.map((item) => (
+      <Item
+        key={item.title}
+        item={item}
+        listPath={listPath}
+        collectionPath={collectionPath}
+        individualPath={individualPath}
+      />
+    ))}
+  </Root>
+)
 
 export default MultiList
