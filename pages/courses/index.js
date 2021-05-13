@@ -47,20 +47,18 @@ const Courses = ({ courses }) => {
   )
 }
 
-export default Courses
-
 const query = `
-  *[(_type == 'course' && isPublished == true) || (_type == 'video' && isPublished == true && !defined(course))] | order(createdAt desc) {
+  *[(_type == 'course' && isPublished == true) || (_type == 'lesson' && isPublished == true && !defined(course))] | order(createdAt desc) {
     title,
     "slug": slug.current,
     _type == 'course' => {
-      "collection": *[_type == 'video' && references(^._id) && isPublished == true] | order(numInCourse asc) [0..2] {
+      "collection": *[_type == 'lesson' && references(^._id) && isPublished == true] | order(positionInCourse asc) [0..2] {
         title,
         "slug": slug.current,
       },
-      "itemsInCollection": count(*[_type == "video" && references(^._id) && isPublished == true])
+      "itemsInCollection": count(*[_type == "lesson" && references(^._id) && isPublished == true])
     },
-    _type == 'video' => {
+    _type == 'lesson' => {
       "description": seoDescription,
     }
   }
@@ -75,3 +73,5 @@ export const getStaticProps = async () => {
     },
   }
 }
+
+export default Courses

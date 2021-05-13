@@ -69,7 +69,7 @@ const Code = styled.div`
   margin: 3rem 0;
 `
 
-const Post = ({ post }) => {
+const Article = ({ article }) => {
   const { isDarkTheme } = useDarkMode()
 
   const serializers = {
@@ -90,14 +90,14 @@ const Post = ({ post }) => {
 
   return (
     <Container>
-      <SEO title={post.title} description={post.seoDescription} />
+      <SEO title={article.title} description={article.seoDescription} />
       <Breadcrumbs
-        title={post.collection.title}
-        slug={`/blog/${post.collection.slug.current}`}
+        title={article.series.title}
+        slug={`/series/${article.series.slug}`}
       />
-      <Title>{post.title}</Title>
+      <Title>{article.title}</Title>
       <Body
-        blocks={post.body}
+        blocks={article.body}
         serializers={serializers}
         imageOptions={{ w: 800, fit: 'max' }}
         projectId="u3w4h9it"
@@ -107,27 +107,20 @@ const Post = ({ post }) => {
   )
 }
 
-export default Post
-
 const allSlugsQuery = `
-  *[_type=="post" && isPublished == true]{
+  *[_type=="article" && isPublished == true] {
     "slug": slug.current,
   }
 `
 
 export const getStaticPaths = async () => {
-  const postSlugs = await client.fetch(allSlugsQuery)
+  const slugs = await client.fetch(allSlugsQuery)
 
-  const paths = postSlugs.map(({ slug }) => {
-    const [collectionSlug, postSlug] = slug.split('/')
-
-    return {
-      params: {
-        collectionSlug,
-        postSlug,
-      },
-    }
-  })
+  const paths = slugs.map(({ slug }) => ({
+    params: {
+      slug,
+    },
+  }))
 
   return {
     paths,
@@ -135,27 +128,26 @@ export const getStaticPaths = async () => {
   }
 }
 
-const postQuery = `
-  *[_type == 'post' && slug.current == $slug][0]{
+const articleQuery = `
+  *[_type == 'article' && slug.current == $slug][0]{
     title,
     body,
     seoDescription,
-    collection->{title,slug}
+    series->{
+      title,
+      "slug": slug.current,
+    }
   }
 `
 
-export const getStaticProps = async ({ params }) => {
-  const { collectionSlug, postSlug } = params
-
-  const variables = {
-    slug: `${collectionSlug}/${postSlug}`,
-  }
-
-  const post = await client.fetch(postQuery, variables)
+export const getStaticProps = async ({ params: { slug } }) => {
+  const article = await client.fetch(articleQuery, { slug })
 
   return {
     props: {
-      post,
+      article,
     },
   }
 }
+
+export default Article

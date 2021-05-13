@@ -145,6 +145,7 @@ const Item = ({ item, listPath, collectionPath, individualPath }) => {
   const path = isCollection
     ? `${collectionPath}/${item.slug}`
     : `${individualPath}/${item.slug}`
+
   return (
     <ListItem>
       <Link href={path}>

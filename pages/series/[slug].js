@@ -17,7 +17,7 @@ const Description = styled.p`
   font-weight: 200;
 `
 
-const Post = styled.div`
+const Article = styled.div`
   position: relative;
   font-size: 1.25rem;
   font-weight: 200;
@@ -56,43 +56,41 @@ const Fallback = styled.p`
   font-weight: 600;
 `
 
-const Collection = ({ collection: { title, description, posts } }) => {
+const Series = ({ series: { title, description, articles } }) => {
   return (
     <Container>
       <SEO title={title} description={description} />
-      <Breadcrumbs title="Blog" slug="/blog" />
+      <Breadcrumbs title="All articles" slug="/blog" />
       <Title>{title}</Title>
       <Description>{description}</Description>
-      {posts.length > 0 ? (
-        posts.map((post, i) => (
-          <Link href={`/blog/${post.slug}`} key={post.slug}>
-            <Post>
+      {articles.length > 0 ? (
+        articles.map((article, i) => (
+          <Link href={`/blog/${article.slug}`} key={article.slug}>
+            <Article>
               <Num>{i + 1}.</Num>
-              <Text>{post.title}</Text>
-            </Post>
+              <Text>{article.title}</Text>
+            </Article>
           </Link>
         ))
       ) : (
-        <Fallback>No posts yet!</Fallback>
+        <Fallback>No articles yet!</Fallback>
       )}
     </Container>
   )
 }
 
-export default Collection
-
 const allSlugsQuery = `
-  *[_type=="collection" && isPublished == true] {
+  *[_type=="series" && isPublished == true] {
     "slug": slug.current,
   }
 `
 
 export const getStaticPaths = async () => {
-  const collectionSlugs = await client.fetch(allSlugsQuery)
+  const slugs = await client.fetch(allSlugsQuery)
 
-  const paths = collectionSlugs.map(({ slug }) => ({
+  const paths = slugs.map(({ slug }) => ({
     params: {
-      collectionSlug: slug,
+      slug,
     },
   }))
 
@@ -102,29 +100,25 @@ export const getStaticPaths = async () => {
   }
 }
 
-const collectionQuery = `
-  *[_type == 'collection' && slug.current == $slug][0]{
+const seriesQuery = `
+  *[_type == 'series' && slug.current == $slug][0]{
     title,
     description,
-    "posts": *[_type == 'post' && references(^._id) && isPublished == true] | order(numInCollection, asc) {
+    "articles": *[_type == 'article' && references(^._id) && isPublished == true] | order(positionInSeries, asc) {
       title,
       "slug": slug.current,
     },
   }
 `
 
-export const getStaticProps = async ({ params }) => {
-  const { collectionSlug } = params
-
-  const variables = {
-    slug: collectionSlug,
-  }
-
-  const collection = await client.fetch(collectionQuery, variables)
+export const getStaticProps = async ({ params: { slug } }) => {
+  const series = await client.fetch(seriesQuery, { slug })
 
   return {
     props: {
-      collection,
+      series,
     },
   }
 }
+
+export default Series

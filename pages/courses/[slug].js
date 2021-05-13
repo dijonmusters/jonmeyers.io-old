@@ -17,7 +17,7 @@ const Description = styled.p`
   font-weight: 200;
 `
 
-const Post = styled.div`
+const Lesson = styled.div`
   position: relative;
   font-size: 1.25rem;
   font-weight: 200;
@@ -39,11 +39,13 @@ const Post = styled.div`
 
 const Num = styled.span`
   position: absolute;
-  left: 2rem;
+  left: 1rem;
   font-size: 2rem;
   top: 50%;
   transform: translateY(-50%);
   color: ${(props) => props.theme.muted3};
+  text-align: right;
+  width: 3ch;
 `
 
 const Text = styled.p`
@@ -56,43 +58,41 @@ const Fallback = styled.p`
   font-weight: 600;
 `
 
-const Collection = ({ collection: { title, description, posts } }) => {
+const Courses = ({ courses: { title, description, lessons } }) => {
   return (
     <Container>
       <SEO title={title} description={description} />
-      <Breadcrumbs title="Blog" slug="/blog" />
+      <Breadcrumbs title="All courses" slug="/courses" />
       <Title>{title}</Title>
       <Description>{description}</Description>
-      {posts.length > 0 ? (
-        posts.map((post, i) => (
-          <Link href={`/blog/${post.slug}`} key={post.slug}>
-            <Post>
+      {lessons.length > 0 ? (
+        lessons.map((lesson, i) => (
+          <Link href={`/lessons/${lesson.slug}`} key={lesson.slug}>
+            <Lesson>
               <Num>{i + 1}.</Num>
-              <Text>{post.title}</Text>
-            </Post>
+              <Text>{lesson.title}</Text>
+            </Lesson>
           </Link>
         ))
       ) : (
-        <Fallback>No posts yet!</Fallback>
+        <Fallback>No lessons yet!</Fallback>
       )}
     </Container>
   )
 }
 
-export default Collection
-
 const allSlugsQuery = `
-  *[_type=="collection" && isPublished == true] {
+  *[_type=="course" && isPublished == true] {
     "slug": slug.current,
   }
 `
 
 export const getStaticPaths = async () => {
-  const collectionSlugs = await client.fetch(allSlugsQuery)
+  const slugs = await client.fetch(allSlugsQuery)
 
-  const paths = collectionSlugs.map(({ slug }) => ({
+  const paths = slugs.map(({ slug }) => ({
     params: {
-      collectionSlug: slug,
+      slug,
     },
   }))
 
@@ -102,29 +102,25 @@ export const getStaticPaths = async () => {
   }
 }
 
-const collectionQuery = `
-  *[_type == 'collection' && slug.current == $slug][0]{
+const coursesQuery = `
+  *[_type == 'course' && slug.current == $slug][0]{
     title,
     description,
-    "posts": *[_type == 'post' && references(^._id) && isPublished == true] | order(numInCollection, asc) {
+    "lessons": *[_type == 'lesson' && references(^._id) && isPublished == true] | order(positionInCourse, asc) {
       title,
       "slug": slug.current,
     },
   }
 `
 
-export const getStaticProps = async ({ params }) => {
-  const { collectionSlug } = params
-
-  const variables = {
-    slug: collectionSlug,
-  }
-
-  const collection = await client.fetch(collectionQuery, variables)
+export const getStaticProps = async ({ params: { slug } }) => {
+  const courses = await client.fetch(coursesQuery, { slug })
 
   return {
     props: {
-      collection,
+      courses,
     },
   }
 }
+
+export default Courses
