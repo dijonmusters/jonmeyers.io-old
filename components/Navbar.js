@@ -2,7 +2,7 @@ import styled from 'styled-components'
 import { md } from 'utils/mediaQueries'
 import Container from 'components/Container'
 import DarkModeToggle from 'components/DarkModeToggle'
-import Link from 'next/link'
+import Link from 'components/link'
 import { useRouter } from 'next/router'
 
 const subtitleMap = {
@@ -17,27 +17,21 @@ const Navbar = ({ className, href }) => {
   return (
     <Nav className={className}>
       <Wrapper>
-        <Link href="/blog">
-          <Anchor>
-            <Img src="/dijon-small.png" />
-            <TextWrapper>
-              <Title>
-                Jon Meyers
-                <Subtitle>{subtitleMap[path]}</Subtitle>
-              </Title>
-            </TextWrapper>
-          </Anchor>
-        </Link>
+        <LinkItem href="/blog">
+          <Img src="/dijon-small.png" />
+          <TextWrapper>
+            <Title>
+              Jon Meyers
+              <Subtitle>{subtitleMap[path]}</Subtitle>
+            </Title>
+          </TextWrapper>
+        </LinkItem>
         <Items>
           <Item isActive={router.pathname === '/blog'}>
-            <Link href="/blog">
-              <Anchor>Articles</Anchor>
-            </Link>
+            <LinkItem href="/blog">Articles</LinkItem>
           </Item>
           <Item isActive={router.pathname === '/courses'}>
-            <Link href="/courses">
-              <Anchor>Courses</Anchor>
-            </Link>
+            <LinkItem href="/courses">Courses</LinkItem>
           </Item>
         </Items>
         <DarkModeToggle />
@@ -61,7 +55,7 @@ const Wrapper = styled(Container)`
   align-items: center;
 `
 
-const Anchor = styled.a`
+const LinkItem = styled(Link)`
   display: flex;
   align-items: center;
 

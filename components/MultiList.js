@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { md } from 'utils/mediaQueries'
-import Link from 'next/link'
+import Link from 'components/link'
 import { IoIosArrowRoundForward } from 'react-icons/io'
 
 const Root = styled.ul`
@@ -36,7 +36,7 @@ const Description = styled.p`
   `};
 `
 
-const Anchor = styled.a`
+const LinkItem = styled(Link)`
   text-decoration: none;
   position: relative;
   font-size: 1.25rem;
@@ -51,7 +51,6 @@ const Anchor = styled.a`
   `};
 
   &:hover {
-    cursor: pointer;
     background-color: ${(props) => props.theme.hover};
   }
 `
@@ -101,7 +100,7 @@ const Bullet = styled.li`
   }
 `
 
-const HoverLink = styled.a`
+const HoverLink = styled(Link)`
   z-index: 1;
   display: inline-flex;
   align-items: center;
@@ -120,9 +119,9 @@ const Bullets = ({ item, individualPath, collectionPath }) => (
     {item.collection.length > 0 ? (
       item.collection.map((individualItem) => (
         <Bullet key={individualItem.slug}>
-          <Link href={`${individualPath}/${individualItem.slug}`}>
-            <HoverLink>{individualItem.title}</HoverLink>
-          </Link>
+          <HoverLink href={`${individualPath}/${individualItem.slug}`}>
+            {individualItem.title}
+          </HoverLink>
         </Bullet>
       ))
     ) : (
@@ -130,11 +129,9 @@ const Bullets = ({ item, individualPath, collectionPath }) => (
     )}
     {item.itemsInCollection > 3 && (
       <Bullet>
-        <Link href={`${collectionPath}/${item.slug}`}>
-          <HoverLink>
-            {item.itemsInCollection - 3} more <Arrow />
-          </HoverLink>
-        </Link>
+        <HoverLink href={`${collectionPath}/${item.slug}`}>
+          {item.itemsInCollection - 3} more <Arrow />
+        </HoverLink>
       </Bullet>
     )}
   </ConnectedBullets>
@@ -148,8 +145,8 @@ const Item = ({ item, listPath, collectionPath, individualPath }) => {
 
   return (
     <ListItem>
-      <Link href={path}>
-        <Anchor>
+      <LinkItem href={path}>
+        <>
           <Title>{item.title}</Title>
           {isCollection ? (
             <Bullets
@@ -160,8 +157,8 @@ const Item = ({ item, listPath, collectionPath, individualPath }) => {
           ) : (
             <Description>{item.description}</Description>
           )}
-        </Anchor>
-      </Link>
+        </>
+      </LinkItem>
     </ListItem>
   )
 }

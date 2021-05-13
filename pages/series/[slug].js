@@ -1,10 +1,10 @@
 import { client } from 'utils/sanity'
 import Container from 'components/Container'
-import Link from 'components/Link'
 import styled from 'styled-components'
 import { md } from 'utils/mediaQueries'
 import SEO from 'components/SEO'
 import Breadcrumbs from 'components/Breadcrumbs'
+import NumberedList from 'components/NumberedList'
 
 const Title = styled.h1`
   font-size: 3rem;
@@ -15,40 +15,6 @@ const Description = styled.p`
   margin: 1.5rem 0;
   font-size: 1.25rem;
   font-weight: 200;
-`
-
-const Article = styled.div`
-  position: relative;
-  font-size: 1.25rem;
-  font-weight: 200;
-  padding: 0.5rem 2rem;
-
-  &:hover {
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0px;
-      right: 0px;
-      bottom: 0px;
-      left: 0px;
-      background-color: ${(props) => props.theme.hover};
-      pointer-events: none;
-    }
-  }
-`
-
-const Num = styled.span`
-  position: absolute;
-  left: 2rem;
-  font-size: 2rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: ${(props) => props.theme.muted3};
-`
-
-const Text = styled.p`
-  margin: 0;
-  margin-left: 2.5rem;
 `
 
 const Fallback = styled.p`
@@ -64,14 +30,7 @@ const Series = ({ series: { title, description, articles } }) => {
       <Title>{title}</Title>
       <Description>{description}</Description>
       {articles.length > 0 ? (
-        articles.map((article, i) => (
-          <Link href={`/blog/${article.slug}`} key={article.slug}>
-            <Article>
-              <Num>{i + 1}.</Num>
-              <Text>{article.title}</Text>
-            </Article>
-          </Link>
-        ))
+        <NumberedList items={articles} individualPath="/blog" />
       ) : (
         <Fallback>No articles yet!</Fallback>
       )}
