@@ -17,7 +17,7 @@ const Navbar = ({ className, href }) => {
   return (
     <Nav className={className}>
       <Wrapper>
-        <LinkItem href="/blog">
+        <LogoLink href="/blog">
           <Img src="/dijon-small.png" />
           <TextWrapper>
             <Title>
@@ -25,7 +25,7 @@ const Navbar = ({ className, href }) => {
               <Subtitle>{subtitleMap[path]}</Subtitle>
             </Title>
           </TextWrapper>
-        </LinkItem>
+        </LogoLink>
         <Items>
           <Item isActive={router.pathname === '/blog'}>
             <LinkItem href="/blog">Articles</LinkItem>
@@ -58,10 +58,15 @@ const Wrapper = styled(Container)`
 const LinkItem = styled(Link)`
   display: flex;
   align-items: center;
+  padding: 1rem 2rem;
 
   &:hover {
     cursor: pointer;
   }
+`
+
+const LogoLink = styled(LinkItem)`
+  padding: 0;
 `
 
 const TextWrapper = styled.div`
@@ -103,7 +108,7 @@ const Items = styled.ul`
 `
 
 const Item = styled.li`
-  padding: 1rem 2rem;
+  padding: 0;
   font-size: 1.25rem;
   margin: 0;
 

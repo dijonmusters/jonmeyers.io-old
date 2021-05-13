@@ -10,7 +10,7 @@ const Item = styled.li`
   position: relative;
   font-size: 1.25rem;
   font-weight: 200;
-  padding: 0.5rem 2rem;
+  padding: 0;
 
   &:hover {
     cursor: pointer;
@@ -32,6 +32,7 @@ const Num = styled.span`
 const Text = styled.p`
   margin: 0;
   margin-left: 2.5rem;
+  padding: 0.5rem 2rem;
 `
 
 const NumberedList = ({ items, individualPath }) => (
