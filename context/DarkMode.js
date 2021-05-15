@@ -2,8 +2,10 @@ import React, { createContext, useState, useEffect } from 'react'
 
 const Context = createContext()
 
+const defaultTheme = 'dark'
+
 const DarkModeProvider = ({ children }) => {
-  const [theme, setTheme] = useState('light')
+  const [theme, setTheme] = useState(defaultTheme)
 
   const setMode = (mode) => {
     localStorage.setItem('theme', mode)
@@ -19,13 +21,8 @@ const DarkModeProvider = ({ children }) => {
 
     if (localTheme) {
       setTheme(localTheme)
-    } else if (
-      matchMedia &&
-      matchMedia('(prefers-color-scheme: dark)').matches
-    ) {
-      setMode('dark')
     } else {
-      setMode('light')
+      setMode(defaultTheme)
     }
   }, [])
 
