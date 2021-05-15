@@ -10,13 +10,16 @@ const Title = styled.h1`
 `
 
 const Lesson = ({ lesson }) => {
+  const isPartOfCourse = !!lesson.course
+  const breadcrumbTitle = isPartOfCourse ? lesson.course.title : 'All Courses'
+  const breadcrumbSlug = isPartOfCourse
+    ? `/courses/${lesson.course.slug}`
+    : '/courses'
+
   return (
     <Container>
       <SEO title={lesson.title} description={lesson.seoDescription} />
-      <Breadcrumbs
-        title={lesson.course.title}
-        slug={`/courses/${lesson.course.slug}`}
-      />
+      <Breadcrumbs title={breadcrumbTitle} slug={breadcrumbSlug} />
       <Title>{lesson.title}</Title>
       <p>{lesson.videoUrl}</p>
     </Container>

@@ -71,6 +71,11 @@ const Code = styled.div`
 
 const Article = ({ article }) => {
   const { isDarkTheme } = useDarkMode()
+  const isPartOfSeries = !!article.series
+  const breadcrumbTitle = isPartOfSeries ? article.series.title : 'All Articles'
+  const breadcrumbSlug = isPartOfSeries
+    ? `/series/${article.series.slug}`
+    : '/blog'
 
   const serializers = {
     types: {
@@ -91,10 +96,7 @@ const Article = ({ article }) => {
   return (
     <Container>
       <SEO title={article.title} description={article.seoDescription} />
-      <Breadcrumbs
-        title={article.series.title}
-        slug={`/series/${article.series.slug}`}
-      />
+      <Breadcrumbs title={breadcrumbTitle} slug={breadcrumbSlug} />
       <Title>{article.title}</Title>
       <Body
         blocks={article.body}
