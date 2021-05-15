@@ -5,14 +5,24 @@ import DarkModeToggle from 'components/DarkModeToggle'
 import Link from 'components/Link'
 import { useRouter } from 'next/router'
 
-const subtitleMap = {
-  blog: 'yet another blog',
-  courses: 'even more courses',
+const navMap = {
+  blog: {
+    options: ['blog', 'series'],
+    subtitle: 'yet another blog',
+  },
+  courses: {
+    options: ['courses', 'lessons'],
+    subtitle: 'even more courses',
+  },
 }
 
 const Navbar = ({ className, href }) => {
   const router = useRouter()
   const [, path] = router.pathname.split('/')
+  const pathConfig =
+    navMap[
+      Object.keys(navMap).filter((item) => navMap[item].options.includes(path))
+    ]
 
   return (
     <Nav className={className}>
@@ -22,15 +32,15 @@ const Navbar = ({ className, href }) => {
           <TextWrapper>
             <Title>
               Jon Meyers
-              <Subtitle>{subtitleMap[path]}</Subtitle>
+              <Subtitle>{pathConfig?.subtitle}</Subtitle>
             </Title>
           </TextWrapper>
         </LogoLink>
         <Items>
-          <Item isActive={router.pathname === '/blog'}>
+          <Item isActive={pathConfig?.options.includes('blog')}>
             <LinkItem href="/blog">Articles</LinkItem>
           </Item>
-          <Item isActive={router.pathname === '/courses'}>
+          <Item isActive={pathConfig?.options.includes('courses')}>
             <LinkItem href="/courses">Courses</LinkItem>
           </Item>
         </Items>
