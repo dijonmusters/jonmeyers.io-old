@@ -2,7 +2,7 @@ import styled from 'styled-components'
 import { md } from 'utils/mediaQueries'
 import Container from 'components/Container'
 import DarkModeToggle from 'components/DarkModeToggle'
-import Link from 'components/link'
+import Link from 'components/Link'
 import { useRouter } from 'next/router'
 
 const subtitleMap = {

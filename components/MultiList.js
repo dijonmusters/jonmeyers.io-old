@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { md } from 'utils/mediaQueries'
-import Link from 'components/link'
+import Link from 'components/Link'
 import { IoIosArrowRoundForward } from 'react-icons/io'
 
 const Root = styled.ul`
