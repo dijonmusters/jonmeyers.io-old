@@ -4,10 +4,14 @@ import styled from 'styled-components'
 import SEO from 'components/SEO'
 import Breadcrumbs from 'components/Breadcrumbs'
 import BlockBody from 'components/BlockBody'
+import { md } from 'utils/mediaQueries'
 
 const Title = styled.h1`
   margin: 3rem 0;
-  font-size: 3rem;
+
+  ${md`
+    font-size: 3rem;
+  `}
 `
 
 const Article = ({ article }) => {

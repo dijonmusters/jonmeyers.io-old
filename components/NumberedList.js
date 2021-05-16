@@ -1,4 +1,5 @@
 import Link from 'components/Link'
+import { md } from 'utils/mediaQueries'
 import styled from 'styled-components'
 
 const List = styled.ul`
@@ -19,30 +20,40 @@ const Item = styled.li`
 `
 
 const Num = styled.span`
-  position: absolute;
-  left: 1rem;
+  margin-right: 1rem;
   font-size: 2rem;
-  top: 50%;
-  transform: translateY(-50%);
   color: ${(props) => props.theme.muted3};
+  flex-basis: 3rem;
   text-align: right;
-  width: 3ch;
+
+  ${md`
+    flex-basis: 3rem;
+  `}
 `
 
 const Text = styled.p`
-  margin: 0;
-  margin-left: 2.5rem;
-  padding: 0.5rem 2rem;
+  flex: 1;
+  margin: 0.5rem 0;
+
+  ${md`
+
+  `}
+`
+
+const NumberedLink = styled(Link)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `
 
 const NumberedList = ({ items, individualPath }) => (
   <List>
     {items.map((item, i) => (
       <Item key={item.slug}>
-        <Link href={`${individualPath}/${item.slug}`}>
+        <NumberedLink href={`${individualPath}/${item.slug}`}>
           <Num>{i + 1}.</Num>
           <Text>{item.title}</Text>
-        </Link>
+        </NumberedLink>
       </Item>
     ))}
   </List>

@@ -7,7 +7,9 @@ import Breadcrumbs from 'components/Breadcrumbs'
 import NumberedList from 'components/NumberedList'
 
 const Title = styled.h1`
-  font-size: 3rem;
+  ${md`
+    font-size: 3rem;
+  `}
 `
 
 const Description = styled.p`

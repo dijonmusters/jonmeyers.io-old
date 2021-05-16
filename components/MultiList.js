@@ -24,16 +24,12 @@ const Title = styled.h2`
 
 const Description = styled.p`
   color: ${(props) => props.theme.muted2};
-  font-size: 0.75rem;
+  font-size: 1rem;
   margin: 0;
   padding: 0.25rem 0.75rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-
-  ${md`
-    font-size: 1rem;
-  `};
 `
 
 const LinkItem = styled(Link)`
@@ -62,18 +58,9 @@ const ConnectedBullets = styled.ul`
 
 const Bullet = styled.li`
   position: relative;
-  padding-left: 1.25rem;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-  font-size: 0.75rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 0.25rem 1.25rem;
+  font-size: 1rem;
   color: ${(props) => props.theme.muted2};
-
-  ${md`
-    font-size: 1rem;
-  `};
 
   &:before {
     background-color: ${(props) => props.theme.separator};
@@ -101,13 +88,19 @@ const Bullet = styled.li`
 `
 
 const HoverLink = styled(Link)`
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 
   &:hover {
     color: ${(props) => props.theme.color};
   }
+`
+
+const More = styled.div`
+  display: flex;
+  align-items: center;
 `
 
 const Arrow = styled(IoIosArrowRoundForward)`
@@ -130,7 +123,9 @@ const Bullets = ({ item, individualPath, collectionPath }) => (
     {item.itemsInCollection > 3 && (
       <Bullet>
         <HoverLink href={`${collectionPath}/${item.slug}`}>
-          {item.itemsInCollection - 3} more <Arrow />
+          <More>
+            {item.itemsInCollection - 3} more <Arrow />
+          </More>
         </HoverLink>
       </Bullet>
     )}

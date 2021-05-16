@@ -44,14 +44,24 @@ const Navbar = ({ className, href }) => {
             <LinkItem href="/courses">Courses</LinkItem>
           </Item>
         </Items>
-        <DarkModeToggle />
+        <DarkmodeButton />
       </Wrapper>
+      <MobileMenu>
+        <Item isActive={pathConfig?.options.includes('blog')}>
+          <LinkItem href="/blog">Articles</LinkItem>
+        </Item>
+        <Item isActive={pathConfig?.options.includes('courses')}>
+          <LinkItem href="/courses">Courses</LinkItem>
+        </Item>
+      </MobileMenu>
     </Nav>
   )
 }
 
 const Nav = styled.nav`
-  border-bottom: 1px solid ${(props) => props.theme.separator};
+  ${md`
+    border-bottom: 1px solid ${(props) => props.theme.separator};
+  `}
 `
 
 const Img = styled.img`
@@ -62,7 +72,13 @@ const Img = styled.img`
 const Wrapper = styled(Container)`
   padding: 1rem;
   display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
+
+  ${md`
+    flex-direction: row;
+  `}
 `
 
 const LinkItem = styled(Link)`
@@ -104,17 +120,37 @@ const Subtitle = styled.span`
   font-weight: 200;
 `
 
-const DarkmodeButton = styled(DarkModeToggle)`
-  flex: 0;
-`
+const DarkmodeButton = styled(DarkModeToggle)``
 
 const Items = styled.ul`
-  flex: 1;
+  display: none;
+
+  ${md`
+    display: flex;
+    flex: 1;
+    list-style: none;
+    justify-content: flex-end;
+    padding: 0 1rem;
+    margin: 0;
+  `}
+`
+
+const MobileMenu = styled.ul`
   display: flex;
   list-style: none;
-  justify-content: flex-end;
-  padding: 0 1rem;
+  justify-content: center;
+  border-top: 1px solid ${(props) => props.theme.separator};
+  padding: 0;
+  padding-top: 2rem;
   margin: 0;
+
+  ${md`
+    display: none;
+  `}
+`
+
+const MobileMenuItem = styled.li`
+  font-size: 1.5rem;
 `
 
 const Item = styled.li`

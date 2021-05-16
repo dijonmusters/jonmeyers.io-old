@@ -3,10 +3,33 @@ import Container from 'components/Container'
 import styled from 'styled-components'
 import SEO from 'components/SEO'
 import Breadcrumbs from 'components/Breadcrumbs'
+import Player from 'react-player/lazy'
+import { md } from 'utils/mediaQueries'
 
 const Title = styled.h1`
   margin: 3rem 0;
-  font-size: 3rem;
+
+  ${md`
+    font-size: 3rem;
+  `}
+`
+
+const Description = styled.p`
+  font-size: 1.25rem;
+  line-height: 1.5;
+  font-weight: 300;
+`
+
+const VideoContainer = styled.div`
+  margin-top: 4rem;
+  position: relative;
+  padding-top: 56.25%;
+`
+
+const VideoPlayer = styled(Player)`
+  position: absolute;
+  top: 0;
+  left: 0;
 `
 
 const Lesson = ({ lesson }) => {
@@ -21,7 +44,15 @@ const Lesson = ({ lesson }) => {
       <SEO title={lesson.title} description={lesson.seoDescription} />
       <Breadcrumbs title={breadcrumbTitle} slug={breadcrumbSlug} />
       <Title>{lesson.title}</Title>
-      <p>{lesson.videoUrl}</p>
+      <Description>{lesson.seoDescription}</Description>
+      <VideoContainer>
+        <VideoPlayer
+          width="100%"
+          height="100%"
+          url={lesson.videoUrl}
+          controls={true}
+        />
+      </VideoContainer>
     </Container>
   )
 }
