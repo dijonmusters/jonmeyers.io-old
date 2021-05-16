@@ -8,6 +8,7 @@ import Navbar from 'components/Navbar'
 const Container = styled.div`
   background: ${(props) => props.theme.background};
   font-family: 'Open Sans', sans-serif;
+  letter-spacing: 0.06rem;
   color: ${(props) => props.theme.color};
   min-height: 100vh;
   display: flex;

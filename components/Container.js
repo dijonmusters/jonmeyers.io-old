@@ -7,7 +7,7 @@ const Container = styled.div`
   padding: 0 1rem;
 
   ${md`
-    padding: 0 2rem;
+    padding: 2rem;
   `}
 `
 
