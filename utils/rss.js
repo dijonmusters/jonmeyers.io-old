@@ -39,7 +39,7 @@ export async function generateRssItem(post) {
       <link>${BLOG_URL}/${post.slug}</link>
       <pubDate>${new Date().toString()}</pubDate>
       <content:encoded><![CDATA[${html}]]></content:encoded>
-      <series>${post.collection.title}</series>
+      ${post.series && `<series>${post.series.title}</series>`}
     </item>
   `
 }

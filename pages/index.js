@@ -40,13 +40,12 @@ const HomePage = () => {
 }
 
 const postsQuery = `
-  *[_type == 'post' && isPublished == true] | order(numInCollection, asc) {
+  *[_type == 'article' && isPublished == true] | order(positionInSeries, asc) {
     title,
     "slug": slug.current,
-    title,
     body,
     seoDescription,
-    collection->{
+    series->{
       title,
     }
   }
