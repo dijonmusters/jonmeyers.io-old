@@ -18,6 +18,7 @@
     "@sanity/client": "^1.150.7",
     "axios": "^0.21.1",
     "chrome-aws-lambda": "^8.0.0",
+    "cloudinary": "^1.25.1",
     "next": "^10.0.5",
     "puppeteer-core": "^8.0.0",
     "react": "^17.0.1",

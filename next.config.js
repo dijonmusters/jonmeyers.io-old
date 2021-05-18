@@ -10,8 +10,8 @@ module.exports = {
       },
       {
         source: '/og',
-        destination: '/api/generate-og-image',
-        permanent: true,
+        destination: '/api/cache-og-image',
+        permanent: false,
       },
       // public articles from old url structure
       {

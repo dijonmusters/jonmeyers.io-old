@@ -19,7 +19,7 @@ const SEO = ({ title, description }) => {
       <meta property="og:description" content={description} />
       <meta
         property="og:image"
-        content={`${host}/api/generate-og-image?title=${title}`}
+        content={`${host}/api/cache-og-image?title=${title}`}
       />
       <meta property="og:url" content={`${host}/${path}`} />
       <meta name="twitter:card" content="summary_large_image" />
