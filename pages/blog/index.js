@@ -6,9 +6,10 @@ import SEO from 'components/SEO'
 import { client } from 'utils/sanity'
 
 const ArticleList = styled(MultiList)`
+  max-width: 100vw;
+
   ${md`
     padding: 0 2rem;
-    margin-top: 4rem;
   `};
 `
 

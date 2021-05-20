@@ -27,12 +27,12 @@ const Navbar = ({ className, href }) => {
   return (
     <Nav className={className}>
       <Wrapper>
-        <LogoLink href="/blog">
+        <LogoLink href="/">
           <Img src="/dijon-small.png" />
           <TextWrapper>
             <Title>
               Jon Meyers
-              <Subtitle>{pathConfig?.subtitle}</Subtitle>
+              <Subtitle>{pathConfig?.subtitle || 'Educator'}</Subtitle>
             </Title>
           </TextWrapper>
         </LogoLink>

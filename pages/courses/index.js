@@ -18,7 +18,6 @@ const Centered = styled.h2`
 const CourseList = styled(MultiList)`
   ${md`
     padding: 0 2rem;
-    margin-top: 4rem;
   `};
 `
 

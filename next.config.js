@@ -4,11 +4,6 @@ module.exports = {
   async redirects() {
     return [
       {
-        source: '/',
-        destination: '/blog',
-        permanent: false,
-      },
-      {
         source: '/og',
         destination: '/api/cache-og-image',
         permanent: false,

@@ -1,4 +1,4 @@
-import styled from 'styled-components'
+import styled, { createGlobalStyle } from 'styled-components'
 import { Normalize } from 'styled-normalize'
 import ThemeProvider from 'context/Theme'
 import DarkModeProvider from 'context/DarkMode'
@@ -26,12 +26,20 @@ const Nav = styled(Navbar)`
 const Main = styled.main`
   flex: 1;
   width: 100%;
+  display: flex;
+`
+
+const GlobalStyles = createGlobalStyle`
+  * {
+    box-sizing: border-box;
+  }
 `
 
 const MyApp = ({ Component, pageProps }) => {
   return (
     <>
       <Normalize />
+      <GlobalStyles />
       <DarkModeProvider>
         <ThemeProvider>
           <Container
