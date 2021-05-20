@@ -78,7 +78,7 @@ const MobileWrapper = styled.div`
   `}
 `
 
-const MobileImage = styled(Image)`
+const RoundedImage = styled(Image)`
   border-radius: 50%;
 `
 
@@ -109,7 +109,7 @@ const HomePage = () => {
             Hi, I'm <Highlight>Jon</Highlight>!
           </Title>
           <MobileWrapper>
-            <MobileImage
+            <RoundedImage
               src="/profile.png"
               alt="Picture of Jon Meyers"
               width={100}
@@ -140,7 +140,7 @@ const HomePage = () => {
           </Socials>
         </Words>
         <ImgWrapper>
-          <Image
+          <RoundedImage
             src="/profile.png"
             alt="Picture of Jon Meyers"
             width={500}
