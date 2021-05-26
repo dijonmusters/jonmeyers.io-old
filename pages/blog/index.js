@@ -1,14 +1,14 @@
 import styled from 'styled-components'
 import Container from 'components/Container'
 import MultiList from 'components/MultiList'
-import { md } from 'utils/mediaQueries'
+import { lg } from 'utils/mediaQueries'
 import SEO from 'components/SEO'
 import { client } from 'utils/sanity'
 
 const ArticleList = styled(MultiList)`
   max-width: 100vw;
 
-  ${md`
+  ${lg`
     padding: 0 2rem;
   `};
 `

@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { md } from 'utils/mediaQueries'
+import { lg } from 'utils/mediaQueries'
 import { client } from 'utils/sanity'
 import fs from 'fs'
 import { generateRss } from 'utils/rss'
@@ -23,7 +23,7 @@ const Title = styled.h1`
   transition: ${(props) => props.theme.transition};
   text-align: center;
 
-  ${md`
+  ${lg`
     font-size: 6rem;
     margin-top: 0;
     margin-bottom: 0;
@@ -40,7 +40,7 @@ const Subtitle = styled.p`
   font-size: 2rem;
   text-align: center;
 
-  ${md`
+  ${lg`
     font-size: 1.5rem;
     text-align: left;
   `};
@@ -54,7 +54,7 @@ const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
 
-  ${md`
+  ${lg`
     flex-direction: row;
   `}
 `
@@ -62,7 +62,7 @@ const Wrapper = styled.div`
 const ImgWrapper = styled.div`
   display: none;
 
-  ${md`
+  ${lg`
     display: flex;
     flex: 1;
     align-items: center;
@@ -73,7 +73,7 @@ const MobileWrapper = styled.div`
   display: flex;
   justify-content: center;
 
-  ${md`
+  ${lg`
     display: none;
   `}
 `
@@ -86,7 +86,7 @@ const Socials = styled.div`
   display: flex;
   justify-content: center;
 
-  ${md`
+  ${lg`
     justify-content: flex-start;
   `}
 `

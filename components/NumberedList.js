@@ -1,5 +1,5 @@
 import Link from 'components/Link'
-import { md } from 'utils/mediaQueries'
+import { lg } from 'utils/mediaQueries'
 import styled from 'styled-components'
 
 const List = styled.ul`
@@ -26,7 +26,7 @@ const Num = styled.span`
   flex-basis: 3rem;
   text-align: right;
 
-  ${md`
+  ${lg`
     flex-basis: 3rem;
   `}
 `
@@ -35,7 +35,7 @@ const Text = styled.p`
   flex: 1;
   margin: 0.5rem 0;
 
-  ${md`
+  ${lg`
 
   `}
 `

@@ -4,12 +4,12 @@ import styled from 'styled-components'
 import SEO from 'components/SEO'
 import Breadcrumbs from 'components/Breadcrumbs'
 import Player from 'react-player/lazy'
-import { md } from 'utils/mediaQueries'
+import { lg } from 'utils/mediaQueries'
 
 const Title = styled.h1`
   margin: 3rem 0;
 
-  ${md`
+  ${lg`
     font-size: 3rem;
   `}
 `

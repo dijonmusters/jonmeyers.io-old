@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import Container from 'components/Container'
-import { md } from 'utils/mediaQueries'
+import { lg } from 'utils/mediaQueries'
 import SEO from 'components/SEO'
 import { client } from 'utils/sanity'
 import MultiList from 'components/MultiList'
@@ -10,13 +10,13 @@ const Centered = styled.h2`
   font-size: 1.5rem;
   margin: 0;
 
-  ${md`
+  ${lg`
     font-size: 2rem;
   `};
 `
 
 const CourseList = styled(MultiList)`
-  ${md`
+  ${lg`
     padding: 0 2rem;
   `};
 `

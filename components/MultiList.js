@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { md } from 'utils/mediaQueries'
+import { lg } from 'utils/mediaQueries'
 import Link from 'components/Link'
 import { IoIosArrowRoundForward } from 'react-icons/io'
 
@@ -17,7 +17,7 @@ const Title = styled.h2`
   font-size: 1.5rem;
   margin: 0;
 
-  ${md`
+  ${lg`
     font-size: 2rem;
   `};
 `
@@ -41,7 +41,7 @@ const LinkItem = styled(Link)`
   display: flex;
   flex-direction: column;
 
-  ${md`
+  ${lg`
     font-size: 1.5rem;
     padding: 1rem;
   `};

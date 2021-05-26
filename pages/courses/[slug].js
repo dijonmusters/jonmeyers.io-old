@@ -1,13 +1,13 @@
 import { client } from 'utils/sanity'
 import Container from 'components/Container'
 import styled from 'styled-components'
-import { md } from 'utils/mediaQueries'
+import { lg } from 'utils/mediaQueries'
 import SEO from 'components/SEO'
 import Breadcrumbs from 'components/Breadcrumbs'
 import NumberedList from 'components/NumberedList'
 
 const Title = styled.h1`
-  ${md`
+  ${lg`
     font-size: 3rem;
   `}
 `

@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { md } from 'utils/mediaQueries'
+import { sm, lg } from 'utils/mediaQueries'
 import Container from 'components/Container'
 import DarkModeToggle from 'components/DarkModeToggle'
 import Link from 'components/Link'
@@ -36,14 +36,14 @@ const Navbar = ({ className, href }) => {
             </Title>
           </TextWrapper>
         </LogoLink>
-        <Items>
+        <DesktopMenu>
           <Item isActive={pathConfig?.options.includes('blog')}>
             <LinkItem href="/blog">Articles</LinkItem>
           </Item>
           <Item isActive={pathConfig?.options.includes('courses')}>
             <LinkItem href="/courses">Courses</LinkItem>
           </Item>
-        </Items>
+        </DesktopMenu>
         <DarkmodeButton />
       </Wrapper>
       <MobileMenu>
@@ -59,7 +59,7 @@ const Navbar = ({ className, href }) => {
 }
 
 const Nav = styled.nav`
-  ${md`
+  ${lg`
     border-bottom: 1px solid ${(props) => props.theme.separator};
   `}
 `
@@ -70,14 +70,19 @@ const Img = styled.img`
 `
 
 const Wrapper = styled(Container)`
-  padding: 1rem;
+  padding: 1rem 2rem;
+  padding-right: 1rem;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
 
-  ${md`
-    flex-direction: row;
+  ${sm`
+    padding: 1rem;
+    padding-right: 0;
+  `}
+
+  ${lg`
+    padding-right: 2rem;
   `}
 `
 
@@ -92,6 +97,7 @@ const LinkItem = styled(Link)`
 `
 
 const LogoLink = styled(LinkItem)`
+  flex: 1;
   padding: 0;
 `
 
@@ -106,7 +112,11 @@ const Title = styled.h1`
   color: ${(props) => props.theme.highlight};
   transition: ${(props) => props.theme.transition};
 
-  ${md`
+  ${sm`
+    font-size: 1.75rem;
+  `}
+
+  ${lg`
     font-size: 2rem;
   `};
 `
@@ -120,12 +130,14 @@ const Subtitle = styled.span`
   font-weight: 200;
 `
 
-const DarkmodeButton = styled(DarkModeToggle)``
+const DarkmodeButton = styled(DarkModeToggle)`
+  flex: 0;
+`
 
-const Items = styled.ul`
+const DesktopMenu = styled.ul`
   display: none;
 
-  ${md`
+  ${lg`
     display: flex;
     flex: 1;
     list-style: none;
@@ -139,12 +151,12 @@ const MobileMenu = styled.ul`
   display: flex;
   list-style: none;
   justify-content: center;
-  border-top: 1px solid ${(props) => props.theme.separator};
+  border-bottom: 1px solid ${(props) => props.theme.separator};
   padding: 0;
-  padding-top: 2rem;
+  padding-bottom: 1rem;
   margin: 0;
 
-  ${md`
+  ${lg`
     display: none;
   `}
 `

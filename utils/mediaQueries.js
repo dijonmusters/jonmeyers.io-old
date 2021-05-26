@@ -1,6 +1,7 @@
 export const breakpoints = {
-  sm: 768,
-  md: 1280,
+  sm: 374,
+  md: 768,
+  lg: 1280,
 }
 
 export const sm = (style) =>
@@ -8,3 +9,6 @@ export const sm = (style) =>
 
 export const md = (style) =>
   `@media (min-width: ${breakpoints.sm + 1}px) { ${style} }`
+
+export const lg = (style) =>
+  `@media (min-width: ${breakpoints.md + 1}px) { ${style} }`

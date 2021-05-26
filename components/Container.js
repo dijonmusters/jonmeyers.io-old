@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { md } from 'utils/mediaQueries'
+import { lg } from 'utils/mediaQueries'
 
 const Container = styled.div`
   max-width: ${(props) => props.theme.maxWidth};
@@ -7,7 +7,7 @@ const Container = styled.div`
   margin: 0 auto;
   padding: 1rem;
 
-  ${md`
+  ${lg`
     padding: 2rem;
   `}
 `
