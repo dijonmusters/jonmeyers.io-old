@@ -1,7 +1,7 @@
 import blocksToHtml from '@sanity/block-content-to-html'
 import { projectId, dataset } from 'utils/sanity'
 
-const BLOG_URL = 'https://jonmeyers.io'
+const BLOG_URL = process.env.BASE_URL
 const BLOG_TITLE = 'Jon Meyers'
 const BLOG_SUBTITLE = 'yet another blog'
 

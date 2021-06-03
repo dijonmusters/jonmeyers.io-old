@@ -20,11 +20,7 @@ const query = `
 `
 
 export const getServerSideProps = async ({ res }) => {
-  const baseUrl = {
-    development: 'http://localhost:3000',
-    production: 'https://jonmeyers.io',
-  }[process.env.NODE_ENV]
-
+  const baseUrl = process.env.BASE_URL
   const staticPages = ['/', '/blog', '/courses']
   const slugs = await client.fetch(query)
   const dynamicPages = slugs.map((slug) => slug.slug)
