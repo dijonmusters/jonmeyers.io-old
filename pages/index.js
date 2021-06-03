@@ -1,8 +1,5 @@
 import styled from 'styled-components'
 import { lg } from 'utils/mediaQueries'
-import { client } from 'utils/sanity'
-import fs from 'fs'
-import { generateRss } from 'utils/rss'
 import Container from 'components/Container'
 import Image from 'next/image'
 import { FaTwitter, FaGithub, FaYoutube } from 'react-icons/fa'
@@ -150,31 +147,6 @@ const HomePage = () => {
       </Wrapper>
     </Root>
   )
-}
-
-const postsQuery = `
-  *[_type == 'article' && isPublished == true] | order(positionInSeries, asc) {
-    title,
-    "slug": slug.current,
-    body,
-    seoDescription,
-    series->{
-      title,
-    }
-  }
-`
-
-export const getStaticProps = async () => {
-  const posts = await client.fetch(postsQuery)
-  const rss = await generateRss(posts)
-
-  fs.writeFileSync('./public/rss.xml', rss)
-
-  console.log('---generated rss feed---')
-
-  return {
-    props: {},
-  }
 }
 
 export default HomePage
