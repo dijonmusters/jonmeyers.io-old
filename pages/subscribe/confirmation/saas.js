@@ -22,7 +22,11 @@ const Title = styled.h2`
 const Text = styled.p`
   margin-top: 0;
   text-align: center;
-  font-size: 1.5rem;
+  font-size: 1rem;
+
+  ${lg`
+    font-size: 1.5rem;
+  `}
 `
 
 const ConfirmationSaaS = () => {
