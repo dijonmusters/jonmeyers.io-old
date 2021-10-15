@@ -1,5 +1,6 @@
 import Container from 'components/Container'
 import styled from 'styled-components'
+import { lg } from 'utils/mediaQueries'
 
 const Page = styled(Container)`
   display: flex;
@@ -9,12 +10,18 @@ const Page = styled(Container)`
 `
 
 const Title = styled.h2`
-  font-size: 4rem;
   margin-bottom: 1rem;
+  font-size: 2rem;
+  text-align: center;
+
+  ${lg`
+    font-size: 4rem;
+  `}
 `
 
 const Text = styled.p`
   margin-top: 0;
+  text-align: center;
   font-size: 1.5rem;
 `
 
