@@ -194,7 +194,6 @@ const Body = styled.div`
 `
 
 const Article = ({ article }) => {
-  console.log({ article })
   const breadcrumbTitle = article.isPartOfSeries
     ? article.seriesTitle
     : 'All Articles'
@@ -238,39 +237,41 @@ export const getStaticPaths = async () => {
     auth: process.env.NOTION_SECRET,
   })
 
-  let results = []
+  let articles = []
+  let data = {}
 
-  let data = await notion.databases.query({
-    database_id: process.env.DATABASE_ID,
-    filter: {
-      property: 'Is Published',
-      checkbox: {
-        equals: true,
-      },
-    },
-  })
-
-  results = [...results, ...data.results]
-
-  while (data.has_more) {
+  do {
     data = await notion.databases.query({
-      database_id: process.env.DATABASE_ID,
+      database_id: process.env.ARTICLES_DATABASE_ID,
       filter: {
-        property: 'Is Published',
-        checkbox: {
-          equals: true,
-        },
+        or: [
+          {
+            property: 'Category',
+            select: {
+              equals: 'Article',
+            },
+          },
+          {
+            property: 'Category',
+            select: {
+              equals: 'Series Article',
+            },
+          },
+        ],
       },
-      start_cursor: data.next_cursor,
+      start_cursor: data?.next_cursor,
     })
-    results = [...results, ...data.results]
-  }
 
-  const paths = results.map((result) => ({
-    params: {
-      slug: slugify(result.properties.Name.title[0].plain_text),
-    },
-  }))
+    articles = [...articles, ...data.results]
+  } while (data?.has_more)
+
+  const paths = articles
+    .filter((article) => article.properties.status === 'Published')
+    .map((result) => ({
+      params: {
+        slug: slugify(result.properties.Name.title[0].plain_text),
+      },
+    }))
 
   return {
     paths,
@@ -283,51 +284,48 @@ export const getStaticProps = async ({ params: { slug } }) => {
     auth: process.env.NOTION_SECRET,
   })
 
-  let results = []
+  let articles = []
+  let data = {}
 
-  let data = await notion.databases.query({
-    database_id: process.env.DATABASE_ID,
-    filter: {
-      property: 'Is Published',
-      checkbox: {
-        equals: true,
-      },
-    },
-  })
-
-  results = [...data.results]
-
-  while (data.has_more) {
+  do {
     data = await notion.databases.query({
-      database_id: process.env.DATABASE_ID,
+      database_id: process.env.ARTICLES_DATABASE_ID,
       filter: {
-        property: 'Is Published',
-        checkbox: {
-          equals: true,
-        },
+        or: [
+          {
+            property: 'Category',
+            select: {
+              equals: 'Article',
+            },
+          },
+          {
+            property: 'Category',
+            select: {
+              equals: 'Series Article',
+            },
+          },
+        ],
       },
-      start_cursor: data.next_cursor,
+      start_cursor: data?.next_cursor,
     })
-    results = [...results, ...data.results]
-  }
 
-  const pageMetaData = results.find(
-    (result) => slugify(result.properties.Name.title[0].plain_text) === slug
+    articles = [...articles, ...data.results]
+  } while (data?.has_more)
+
+  const pageMetaData = articles.find(
+    (article) => slugify(article.properties.Name.title[0].plain_text) === slug
   )
 
-  data = await notion.blocks.children.list({
-    block_id: pageMetaData.id,
-  })
+  let blockData = {}
+  let blockResults = []
 
-  results = [...data.results]
-
-  while (data.has_more) {
-    data = await notion.blocks.children.list({
+  do {
+    blockData = await notion.blocks.children.list({
       block_id: pageMetaData.id,
-      start_cursor: data.next_cursor,
+      start_cursor: blockData?.next_cursor,
     })
-    results = [...results, ...data.results]
-  }
+    blockResults = [...blockResults, ...blockData.results]
+  } while (blockData?.has_more)
 
   let articleData = {}
 
@@ -337,17 +335,15 @@ export const getStaticProps = async ({ params: { slug } }) => {
     })
 
     const unsortedArticlesInSeries = await Promise.all(
-      series.properties['Related to Articles (Series)'].relation.map(
-        async ({ id }) => {
-          const seriesArticle = await notion.pages.retrieve({ page_id: id })
-          return {
-            title: seriesArticle.properties.Name.title[0].plain_text,
-            positionInSeries:
-              seriesArticle.properties['Position in Series'].number,
-            slug: slugify(seriesArticle.properties.Name.title[0].plain_text),
-          }
+      series.properties['Related to Content'].relation.map(async ({ id }) => {
+        const seriesArticle = await notion.pages.retrieve({ page_id: id })
+        return {
+          title: seriesArticle.properties.Name.title[0].plain_text,
+          positionInSeries:
+            seriesArticle.properties['Position in Series'].number,
+          slug: slugify(seriesArticle.properties.Name.title[0].plain_text),
         }
-      )
+      })
     )
 
     const articlesInSeries = (await unsortedArticlesInSeries).sort(
@@ -367,7 +363,7 @@ export const getStaticProps = async ({ params: { slug } }) => {
   const article = {
     title: pageMetaData.properties.Name.title[0].plain_text,
     description: pageMetaData.properties.Description.rich_text[0].plain_text,
-    html: NotionBlocksHtmlParser.getInstance().parse(results),
+    html: NotionBlocksHtmlParser.getInstance().parse(blockResults),
     ...articleData,
   }
 
