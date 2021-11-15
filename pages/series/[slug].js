@@ -60,9 +60,9 @@ export const getStaticPaths = async () => {
           },
         },
         {
-          property: 'Is Published',
-          checkbox: {
-            equals: true,
+          property: 'Status',
+          select: {
+            equals: 'Published',
           },
         },
       ],
@@ -101,9 +101,9 @@ export const getStaticProps = async ({ params: { slug } }) => {
             },
           },
           {
-            property: 'Is Published',
-            checkbox: {
-              equals: true,
+            property: 'Status',
+            select: {
+              equals: 'Published',
             },
           },
         ],

@@ -26,11 +26,11 @@ const Fallback = styled.p`
   font-weight: 600;
 `
 
-const Courses = ({ course: { title, description, lessons } }) => {
+const Video = ({ video: { title, description, lessons } }) => {
   return (
     <Container>
       <SEO title={title} description={description} />
-      <Breadcrumbs title="All videos" slug="/courses" />
+      <Breadcrumbs title="All videos" slug="/videos" />
       <Title>{title}</Title>
       <Description>{description}</Description>
       {lessons.length > 0 ? (
@@ -165,7 +165,7 @@ export const getStaticProps = async ({ params: { slug } }) => {
 
   return {
     props: {
-      course: {
+      video: {
         title,
         description: description.replace(/(<([^>]+)>)/gi, ''),
         htmlDescription: description,
@@ -176,4 +176,4 @@ export const getStaticProps = async ({ params: { slug } }) => {
   }
 }
 
-export default Courses
+export default Video

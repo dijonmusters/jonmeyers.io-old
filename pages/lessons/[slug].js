@@ -1,10 +1,13 @@
-import { client } from 'utils/sanity'
 import Container from 'components/Container'
 import styled from 'styled-components'
 import SEO from 'components/SEO'
 import Breadcrumbs from 'components/Breadcrumbs'
 import Player from 'react-player/lazy'
 import { lg } from 'utils/mediaQueries'
+import { Client } from '@notionhq/client'
+import slugify from 'utils/slugify'
+import { NotionBlocksHtmlParser } from '@notion-stuff/blocks-html-parser'
+import Body from 'components/Body'
 
 const Title = styled.h1`
   margin: 3rem 0;
@@ -14,16 +17,21 @@ const Title = styled.h1`
   `}
 `
 
-const Description = styled.p`
-  font-size: 1.25rem;
-  line-height: 1.5;
-  font-weight: 300;
-`
-
 const VideoContainer = styled.div`
-  margin-top: 4rem;
   position: relative;
+  margin-top: 4rem;
+  margin-bottom: 4rem;
   padding-top: 56.25%;
+
+  &:before {
+    content: '';
+    position: absolute;
+    left: -0.5rem;
+    top: -0.5rem;
+    width: calc(100% + 1rem);
+    height: calc(100% + 1rem);
+    background-image: ${(props) => props.theme.gradient};
+  }
 `
 
 const VideoPlayer = styled(Player)`
@@ -33,18 +41,19 @@ const VideoPlayer = styled(Player)`
 `
 
 const Lesson = ({ lesson }) => {
-  const isPartOfCourse = !!lesson.course
-  const breadcrumbTitle = isPartOfCourse ? lesson.course.title : 'All Courses'
-  const breadcrumbSlug = isPartOfCourse
-    ? `/courses/${lesson.course.slug}`
+  console.log({ lesson })
+  const breadcrumbTitle = lesson.isPartOfSeries
+    ? lesson.seriesTitle
+    : 'All Videos'
+  const breadcrumbSlug = lesson.isPartOfSeries
+    ? `/courses/${lesson.seriesSlug}`
     : '/courses'
 
   return (
     <Container>
-      <SEO title={lesson.title} description={lesson.seoDescription} />
+      <SEO title={lesson.title} description={lesson.description} />
       <Breadcrumbs title={breadcrumbTitle} slug={breadcrumbSlug} />
       <Title>{lesson.title}</Title>
-      <Description>{lesson.seoDescription}</Description>
       <VideoContainer>
         <VideoPlayer
           width="100%"
@@ -53,50 +62,176 @@ const Lesson = ({ lesson }) => {
           controls={true}
         />
       </VideoContainer>
+      <Body html={lesson.html} />
     </Container>
   )
 }
 
-const allSlugsQuery = `
-  *[_type=="lesson" && isPublished == true] {
-    "slug": slug.current,
-  }
-`
-
 export const getStaticPaths = async () => {
-  const slugs = await client.fetch(allSlugsQuery)
+  const notion = new Client({
+    auth: process.env.NOTION_SECRET,
+  })
 
-  const paths = slugs.map(({ slug }) => ({
-    params: {
-      slug,
-    },
-  }))
+  let videos = []
+  let data = {}
+
+  do {
+    data = await notion.databases.query({
+      database_id: process.env.ARTICLES_DATABASE_ID,
+      filter: {
+        or: [
+          {
+            property: 'Category',
+            select: {
+              equals: 'Video',
+            },
+          },
+          {
+            property: 'Category',
+            select: {
+              equals: 'Series Video',
+            },
+          },
+        ],
+      },
+      start_cursor: data?.next_cursor,
+    })
+
+    videos = [...videos, ...data.results]
+  } while (data?.has_more)
+
+  const paths = videos
+    // need to manually filter for `Published` because we can't
+    // combine an `and` and an `or` in query
+    .filter((video) => video.properties.status === 'Published')
+    .map((result) => ({
+      params: {
+        slug: slugify(result.properties.Name.title[0].plain_text),
+      },
+    }))
 
   return {
     paths,
-    fallback: false,
+    fallback: 'blocking',
   }
 }
 
-const lessonQuery = `
-  *[_type == 'lesson' && slug.current == $slug][0]{
-    title,
-    seoDescription,
-    videoUrl,
-    course->{
-      title,
-      "slug": slug.current,
+export const getStaticProps = async ({ params: { slug } }) => {
+  const notion = new Client({
+    auth: process.env.NOTION_SECRET,
+  })
+
+  let videos = []
+  let data = {}
+
+  do {
+    data = await notion.databases.query({
+      database_id: process.env.ARTICLES_DATABASE_ID,
+      filter: {
+        or: [
+          {
+            property: 'Category',
+            select: {
+              equals: 'Video',
+            },
+          },
+          {
+            property: 'Category',
+            select: {
+              equals: 'Series Video',
+            },
+          },
+        ],
+      },
+      start_cursor: data?.next_cursor,
+    })
+
+    videos = [...videos, ...data.results]
+  } while (data?.has_more)
+
+  const pageMetaData = videos.find(
+    (video) => slugify(video.properties.Name.title[0].plain_text) === slug
+  )
+
+  let blockData = {}
+  let blockResults = []
+
+  do {
+    blockData = await notion.blocks.children.list({
+      block_id: pageMetaData.id,
+      start_cursor: blockData?.next_cursor,
+    })
+    blockResults = [...blockResults, ...blockData.results]
+  } while (blockData?.has_more)
+
+  let videoData = {}
+
+  if (pageMetaData.properties.Category.select.name === 'Series Video') {
+    const videosInSeriesResults = await notion.databases.query({
+      database_id: process.env.ARTICLES_DATABASE_ID,
+      filter: {
+        and: [
+          {
+            property: 'Category',
+            select: {
+              equals: 'Series Video',
+            },
+          },
+          {
+            property: 'Status',
+            select: {
+              equals: 'Published',
+            },
+          },
+          {
+            property: 'Series',
+            relation: {
+              contains: pageMetaData.properties.Series.relation[0].id,
+            },
+          },
+        ],
+      },
+      sorts: [
+        {
+          property: 'Position in Series',
+          direction: 'ascending',
+        },
+      ],
+    })
+
+    const videosInSeries = videosInSeriesResults.results.map((video) => ({
+      title: video.properties.Name.title[0].plain_text,
+      positionInSeries: video.properties['Position in Series'].number,
+      slug: slugify(video.properties.Name.title[0].plain_text),
+    }))
+
+    const series = await notion.pages.retrieve({
+      page_id: pageMetaData.properties.Series.relation[0].id,
+    })
+
+    const seriesTitle = series.properties.Name.title[0].plain_text
+
+    videoData = {
+      isPartOfSeries: true,
+      seriesTitle,
+      seriesSlug: slugify(seriesTitle),
+      videosInSeries,
     }
   }
-`
 
-export const getStaticProps = async ({ params: { slug } }) => {
-  const lesson = await client.fetch(lessonQuery, { slug })
+  const lesson = {
+    title: pageMetaData.properties.Name.title[0].plain_text,
+    description: pageMetaData.properties.Description.rich_text[0].plain_text,
+    html: NotionBlocksHtmlParser.getInstance().parse(blockResults),
+    videoUrl: pageMetaData.properties['Video URL'].url,
+    ...videoData,
+  }
 
   return {
     props: {
       lesson,
     },
+    revalidate: 60,
   }
 }
 

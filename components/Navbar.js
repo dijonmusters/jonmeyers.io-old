@@ -10,9 +10,9 @@ const navMap = {
     options: ['blog', 'series'],
     subtitle: 'yet another blog',
   },
-  courses: {
-    options: ['courses', 'lessons'],
-    subtitle: 'even more courses',
+  videos: {
+    options: ['courses', 'lessons', 'videos'],
+    subtitle: 'another video tutorial',
   },
 }
 
@@ -40,8 +40,8 @@ const Navbar = ({ className, href }) => {
           <Item isActive={pathConfig?.options.includes('blog')}>
             <LinkItem href="/blog">Articles</LinkItem>
           </Item>
-          <Item isActive={pathConfig?.options.includes('courses')}>
-            <LinkItem href="/courses">Courses</LinkItem>
+          <Item isActive={pathConfig?.options.includes('videos')}>
+            <LinkItem href="/videos">Videos</LinkItem>
           </Item>
         </DesktopMenu>
         <DarkmodeButton />
@@ -50,8 +50,8 @@ const Navbar = ({ className, href }) => {
         <Item isActive={pathConfig?.options.includes('blog')}>
           <LinkItem href="/blog">Articles</LinkItem>
         </Item>
-        <Item isActive={pathConfig?.options.includes('courses')}>
-          <LinkItem href="/courses">Courses</LinkItem>
+        <Item isActive={pathConfig?.options.includes('videos')}>
+          <LinkItem href="/videos">Videos</LinkItem>
         </Item>
       </MobileMenu>
     </Nav>
@@ -159,10 +159,6 @@ const MobileMenu = styled.ul`
   ${lg`
     display: none;
   `}
-`
-
-const MobileMenuItem = styled.li`
-  font-size: 1.5rem;
 `
 
 const Item = styled.li`

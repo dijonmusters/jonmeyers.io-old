@@ -2,8 +2,12 @@ import styled from 'styled-components'
 import Container from 'components/Container'
 import { lg } from 'utils/mediaQueries'
 import SEO from 'components/SEO'
-import { client } from 'utils/sanity'
 import MultiList from 'components/MultiList'
+import { Client } from '@notionhq/client'
+import slugify from 'utils/slugify'
+
+// TODO! Make this only video series!
+// TODO! Male [slug].js only video series
 
 const Centered = styled.h2`
   text-align: center;
@@ -44,30 +48,86 @@ const Courses = ({ courses }) => {
   )
 }
 
-const query = `
-  *[(_type == 'course' && isPublished == true) || (_type == 'lesson' && isPublished == true && !defined(course))] | order(createdAt desc) {
-    title,
-    "slug": slug.current,
-    _type == 'course' => {
-      "collection": *[_type == 'lesson' && references(^._id) && isPublished == true] | order(positionInCourse asc) [0..2] {
-        title,
-        "slug": slug.current,
-      },
-      "itemsInCollection": count(*[_type == "lesson" && references(^._id) && isPublished == true])
-    },
-    _type == 'lesson' => {
-      "description": seoDescription,
-    }
-  }
-`
-
 export const getStaticProps = async () => {
-  const courses = await client.fetch(query)
+  const notion = new Client({
+    auth: process.env.NOTION_SECRET,
+  })
+
+  const coursesResults = await notion.databases.query({
+    database_id: process.env.SERIES_DATABASE_ID,
+    filter: {
+      and: [
+        {
+          property: 'Category',
+          select: {
+            equals: 'Video',
+          },
+        },
+        {
+          property: 'Status',
+          select: {
+            equals: 'Published',
+          },
+        },
+      ],
+    },
+  })
+
+  const courses = await Promise.all(
+    coursesResults.results.map(async (series) => {
+      const articlesInSeries = await notion.databases.query({
+        database_id: process.env.ARTICLES_DATABASE_ID,
+        filter: {
+          and: [
+            {
+              property: 'Status',
+              select: {
+                equals: 'Published',
+              },
+            },
+            {
+              property: 'Series',
+              relation: {
+                contains: series.id,
+              },
+            },
+          ],
+        },
+        sorts: [
+          {
+            property: 'Position in Series',
+            direction: 'ascending',
+          },
+        ],
+      })
+
+      const title = series.properties.Name.title[0].plain_text
+      const slug = slugify(title)
+      const publishedDate = series.properties['Published Date'].date.start
+      const itemsInCollection = articlesInSeries.results.length
+      const collection = articlesInSeries.results
+        .slice(0, 3)
+        .map((article) => ({
+          title: article.properties.Name.title[0].plain_text,
+          positionInSeries: article.properties['Position in Series'].number,
+          slug: slugify(article.properties.Name.title[0].plain_text),
+        }))
+
+      return {
+        title,
+        slug,
+        collection,
+        itemsInCollection,
+        publishedDate,
+      }
+    })
+  )
 
   return {
     props: {
       courses,
     },
+    revalidate: 60,
   }
 }
 
