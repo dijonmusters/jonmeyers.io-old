@@ -14,7 +14,7 @@ const Title = styled.h1`
   `}
 `
 
-const Description = styled.div`
+const Description = styled.p`
   line-height: 32px;
   margin: 1.5rem 0;
   font-size: 1.25rem;
@@ -26,19 +26,17 @@ const Fallback = styled.p`
   font-weight: 600;
 `
 
-const Series = ({
-  series: { title, description, htmlDescription, articles },
-}) => {
+const Video = ({ video: { title, description, lessons } }) => {
   return (
     <Container>
       <SEO title={title} description={description} />
-      <Breadcrumbs title="All articles" slug="/blog" />
+      <Breadcrumbs title="All videos" slug="/videos" />
       <Title>{title}</Title>
-      <Description dangerouslySetInnerHTML={{ __html: htmlDescription }} />
-      {articles.length > 0 ? (
-        <NumberedList items={articles} individualPath="/blog" />
+      <Description>{description}</Description>
+      {lessons.length > 0 ? (
+        <NumberedList items={lessons} individualPath="/videos" />
       ) : (
-        <Fallback>No articles yet!</Fallback>
+        <Fallback>No lessons yet!</Fallback>
       )}
     </Container>
   )
@@ -56,7 +54,7 @@ export const getStaticPaths = async () => {
         {
           property: 'Category',
           select: {
-            equals: 'Article',
+            equals: 'Video',
           },
         },
         {
@@ -97,7 +95,7 @@ export const getStaticProps = async ({ params: { slug } }) => {
           {
             property: 'Category',
             select: {
-              equals: 'Article',
+              equals: 'Video',
             },
           },
           {
@@ -127,14 +125,14 @@ export const getStaticProps = async ({ params: { slug } }) => {
     pageData.results
   )
 
-  const articlesInSeries = await notion.databases.query({
+  const videosInSeries = await notion.databases.query({
     database_id: process.env.ARTICLES_DATABASE_ID,
     filter: {
       and: [
         {
           property: 'Category',
           select: {
-            equals: 'Series Article',
+            equals: 'Series Video',
           },
         },
         {
@@ -159,23 +157,23 @@ export const getStaticProps = async ({ params: { slug } }) => {
     ],
   })
 
-  const articles = articlesInSeries.results.map((article) => ({
-    title: article.properties.Name.title[0].plain_text,
-    positionInSeries: article.properties['Position in Series'].number,
-    slug: slugify(article.properties.Name.title[0].plain_text),
+  const lessons = videosInSeries.results.map((video) => ({
+    title: video.properties.Name.title[0].plain_text,
+    positionInSeries: video.properties['Position in Series'].number,
+    slug: slugify(video.properties.Name.title[0].plain_text),
   }))
 
   return {
     props: {
-      series: {
+      video: {
         title,
         description: description.replace(/(<([^>]+)>)/gi, ''),
         htmlDescription: description,
-        articles,
+        lessons,
       },
     },
     revalidate: 60,
   }
 }
 
-export default Series
+export default Video

@@ -69,8 +69,10 @@ const common = {
     rgba(151, 151, 151, 0.06) 89%,
     rgba(249, 249, 249, 0.06) 89%,
     rgba(249, 249, 249, 0.06) 100%
-  ),
-  linear-gradient(90deg, rgb(97, 99, 229), rgb(18, 250, 185))`,
+    ),
+    linear-gradient(90deg, rgb(97, 99, 229), rgb(18, 250, 185))`,
+  gradientHighlightLeft: 'rgb(97, 99, 229)',
+  gradientHighlightRight: 'rgb(18, 250, 185)',
 }
 
 // old gradient - linear-gradient(to bottom, #5b86e5, #36d1dc)
@@ -108,6 +110,7 @@ const darkTheme = {
   muted2: '#939393',
   muted3: '#737373',
   highlight: '#36d1dc',
+  oppositeHighlight: '#c1e66e',
   offHighlight: '#2f2f2f',
   isDarkMode: true,
   separator: '#afafaf',

@@ -21,7 +21,6 @@ const Title = styled.h1`
   text-align: center;
 
   ${lg`
-    font-size: 6rem;
     margin-top: 0;
     margin-bottom: 0;
     text-align: left;
@@ -30,6 +29,10 @@ const Title = styled.h1`
 
 const Highlight = styled.span`
   color: ${(props) => props.theme.highlight};
+`
+
+const OppositeHighlight = styled.span`
+  color: ${(props) => props.theme.gradientHighlightRight};
 `
 
 const Subtitle = styled.p`
@@ -47,9 +50,26 @@ const Words = styled.section`
   flex: 3;
 `
 
+const GradientWrapper = styled.div`
+  position: relative;
+
+  &:before {
+    content: '';
+    position: absolute;
+    left: -0.5rem;
+    top: -0.5rem;
+    width: calc(100% + 1rem);
+    height: calc(100% + 1rem);
+    background-image: ${(props) => props.theme.gradient};
+  }
+`
+
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
+  position: relative;
+  background: ${(props) => props.theme.background};
+  padding: 2rem;
 
   ${lg`
     flex-direction: row;
@@ -100,51 +120,53 @@ const Icon = styled.a`
 const HomePage = () => {
   return (
     <Root>
-      <Wrapper>
-        <Words>
-          <Title>
-            Hi, I'm <Highlight>Jon</Highlight>!
-          </Title>
-          <MobileWrapper>
+      <GradientWrapper>
+        <Wrapper>
+          <Words>
+            <Title>
+              Hi, I'm <Highlight>Jon</Highlight>!
+            </Title>
+            <MobileWrapper>
+              <RoundedImage
+                src="/profile.png"
+                alt="Picture of Jon Meyers"
+                width={100}
+                height={100}
+              />
+            </MobileWrapper>
+            <Subtitle>
+              I write{' '}
+              <Link href="/blog">
+                <OppositeHighlight>articles</OppositeHighlight>
+              </Link>{' '}
+              and{' '}
+              <Link href="/courses">
+                <OppositeHighlight>courses</OppositeHighlight>
+              </Link>{' '}
+              about web development.
+            </Subtitle>
+            <Socials>
+              <Icon href="https://twitter.com/_dijonmusters">
+                <FaTwitter />
+              </Icon>
+              <Icon href="https://www.youtube.com/channel/UCPitAIwktfCfcMR4kDWebDQ">
+                <FaYoutube />
+              </Icon>
+              <Icon href="https://github.com/dijonmusters">
+                <FaGithub />
+              </Icon>
+            </Socials>
+          </Words>
+          <ImgWrapper>
             <RoundedImage
               src="/profile.png"
               alt="Picture of Jon Meyers"
-              width={100}
-              height={100}
+              width={500}
+              height={500}
             />
-          </MobileWrapper>
-          <Subtitle>
-            I write{' '}
-            <Link href="/blog">
-              <Highlight>articles</Highlight>
-            </Link>{' '}
-            and{' '}
-            <Link href="/courses">
-              <Highlight>courses</Highlight>
-            </Link>{' '}
-            about web development.
-          </Subtitle>
-          <Socials>
-            <Icon href="https://twitter.com/_dijonmusters">
-              <FaTwitter />
-            </Icon>
-            <Icon href="https://www.youtube.com/channel/UCPitAIwktfCfcMR4kDWebDQ">
-              <FaYoutube />
-            </Icon>
-            <Icon href="https://github.com/dijonmusters">
-              <FaGithub />
-            </Icon>
-          </Socials>
-        </Words>
-        <ImgWrapper>
-          <RoundedImage
-            src="/profile.png"
-            alt="Picture of Jon Meyers"
-            width={500}
-            height={500}
-          />
-        </ImgWrapper>
-      </Wrapper>
+          </ImgWrapper>
+        </Wrapper>
+      </GradientWrapper>
     </Root>
   )
 }

@@ -25,7 +25,7 @@ const Article = ({ article }) => {
     ? article.seriesTitle
     : 'All Articles'
   const breadcrumbSlug = article.isPartOfSeries
-    ? `/series/${article.seriesSlug}`
+    ? `/blog-series/${article.seriesSlug}`
     : '/blog'
 
   useEffect(() => {
@@ -145,16 +145,16 @@ export const getStaticProps = async ({ params: { slug } }) => {
     (article) => slugify(article.properties.Name.title[0].plain_text) === slug
   )
 
-  let blockData = {}
+  data = {}
   let blockResults = []
 
   do {
-    blockData = await notion.blocks.children.list({
+    data = await notion.blocks.children.list({
       block_id: pageMetaData.id,
-      start_cursor: blockData?.next_cursor,
+      start_cursor: data?.next_cursor,
     })
-    blockResults = [...blockResults, ...blockData.results]
-  } while (blockData?.has_more)
+    blockResults = [...blockResults, ...data.results]
+  } while (data?.has_more)
 
   let articleData = {}
 
