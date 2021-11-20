@@ -1,60 +1,56 @@
 import Link from 'components/Link'
-import { lg } from 'utils/mediaQueries'
 import styled from 'styled-components'
 
 const List = styled.ul`
   padding: 0;
   list-style: none;
+  background: ${(props) => props.theme.offBackground};
+  color: ${(props) => props.theme.mutedTextOnGray};
+  margin-bottom: 3rem;
 `
 
-const Item = styled.li`
-  position: relative;
-  font-size: 1.25rem;
-  font-weight: 200;
-  padding: 0;
+const Anchor = styled.a`
+  display: flex;
+  align-items: center;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid #dfdfdf;
 
-  &:hover {
-    cursor: pointer;
-    background: ${(props) => props.theme.hover};
+  &:hover > :last-child {
+    text-decoration: underline;
   }
 `
 
-const Num = styled.span`
-  margin-right: 1rem;
-  font-size: 2rem;
-  color: ${(props) => props.theme.muted3};
-  flex-basis: 3rem;
-  text-align: right;
-
-  ${lg`
-    flex-basis: 3rem;
-  `}
-`
-
-const Text = styled.p`
-  flex: 1;
-  margin: 0.5rem 0;
-
-  ${lg`
-
-  `}
-`
-
-const NumberedLink = styled(Link)`
+const Number = styled.span`
+  flex-grow: 0;
+  flex-shrink: 0;
+  background: ${(props) =>
+    props.isActive ? props.theme.highlight : props.theme.backgroundGray};
+  color: ${(props) =>
+    props.isActive ? props.theme.textOnHighlight : props.theme.textOnGray};
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-right: 1rem;
+`
+
+const Text = styled.span`
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `
 
 const NumberedList = ({ items, individualPath }) => (
   <List>
     {items.map((item, i) => (
-      <Item key={item.slug}>
-        <NumberedLink href={`${individualPath}/${item.slug}`}>
-          <Num>{i + 1}.</Num>
+      <Link key={item.slug} href={`${individualPath}/${item.slug}`}>
+        <Anchor>
+          <Number>{i + 1}</Number>
           <Text>{item.title}</Text>
-        </NumberedLink>
-      </Item>
+        </Anchor>
+      </Link>
     ))}
   </List>
 )

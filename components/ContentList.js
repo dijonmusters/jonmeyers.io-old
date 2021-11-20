@@ -23,7 +23,7 @@ const Title = styled.h2`
 `
 
 const Description = styled.p`
-  color: ${(props) => props.theme.muted2};
+  color: ${(props) => props.theme.muted};
   font-size: 1rem;
   margin: 0;
   padding: 0.25rem 0.75rem;
@@ -68,10 +68,6 @@ const UnstyledLink = styled.a`
   &:hover {
     background-color: ${(props) => props.theme.hover};
   }
-
-  &:visited {
-    color: inherit;
-  }
 `
 
 const ConnectedBullets = styled.ul`
@@ -83,10 +79,10 @@ const Bullet = styled.li`
   position: relative;
   padding: 0.25rem 1.25rem;
   font-size: 1rem;
-  color: ${(props) => props.theme.muted2};
+  color: ${(props) => props.theme.muted};
 
   &:before {
-    background-color: ${(props) => props.theme.separator};
+    background-color: ${(props) => props.theme.muted};
     width: 1px;
     content: '';
     position: absolute;
@@ -101,7 +97,7 @@ const Bullet = styled.li`
 
   &:after {
     width: 0.5rem;
-    border-bottom: solid 1px ${(props) => props.theme.separator};
+    border-bottom: solid 1px ${(props) => props.theme.muted};
     content: '';
     position: absolute;
     left: calc(0.5rem + 1px);
@@ -215,7 +211,7 @@ const Item = ({ item }) => {
   return <p>something is wrong...</p>
 }
 
-const MultiList = ({ className, content }) => (
+const ContentList = ({ className, content }) => (
   <Root className={className}>
     {content.map((item) => (
       <Item key={item.title} item={item} />
@@ -223,4 +219,4 @@ const MultiList = ({ className, content }) => (
   </Root>
 )
 
-export default MultiList
+export default ContentList

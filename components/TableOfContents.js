@@ -4,8 +4,8 @@ import Link from './Link'
 import { useRouter } from 'next/router'
 
 const Container = styled.div`
-  background: ${(props) => props.theme.offBackground3};
-  color: ${(props) => props.theme.offColor3};
+  background: ${(props) => props.theme.offBackground};
+  color: ${(props) => props.theme.mutedTextOnGray};
   margin-bottom: 3rem;
 `
 
@@ -37,8 +37,9 @@ const Number = styled.span`
   flex-grow: 0;
   flex-shrink: 0;
   background: ${(props) =>
-    props.isActive ? props.theme.highlight : props.theme.muted3};
-  color: ${(props) => (props.isActive ? '#444' : props.theme.colorOpposite)};
+    props.isActive ? props.theme.highlight : props.theme.backgroundGray};
+  color: ${(props) =>
+    props.isActive ? props.theme.textOnHighlight : props.theme.textOnGray};
   border-radius: 50%;
   width: 40px;
   height: 40px;

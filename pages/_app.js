@@ -33,6 +33,10 @@ const GlobalStyles = createGlobalStyle`
   * {
     box-sizing: border-box;
   }
+
+  a, a:visited {
+    color: inherit;
+  }
 `
 
 const MyApp = ({ Component, pageProps }) => {

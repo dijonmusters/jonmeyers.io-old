@@ -98,7 +98,7 @@ const Html = styled.div`
   }
 
   *:not(pre) > code {
-    background: ${(props) => props.theme.offHighlight};
+    background: ${(props) => props.theme.backgroundGray};
     padding: 0.25rem 0.5rem;
     border-radius: 5px;
   }

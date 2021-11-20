@@ -2,7 +2,7 @@ import styled from 'styled-components'
 import { lg } from 'utils/mediaQueries'
 import Container from 'components/Container'
 import Image from 'next/image'
-import { FaTwitter, FaGithub, FaYoutube } from 'react-icons/fa'
+import { FaTwitter, FaGithub, FaYoutube, FaEgg } from 'react-icons/fa'
 import Link from 'components/Link'
 
 const Root = styled(Container)`
@@ -19,6 +19,7 @@ const Title = styled.h1`
   color: ${(props) => props.theme.color};
   transition: ${(props) => props.theme.transition};
   text-align: center;
+  font-weight: 500;
 
   ${lg`
     margin-top: 0;
@@ -28,11 +29,13 @@ const Title = styled.h1`
 `
 
 const Highlight = styled.span`
-  color: ${(props) => props.theme.highlight};
+  color: ${(props) => props.theme.highlightMidway};
+  font-weight: 600;
 `
 
 const OppositeHighlight = styled.span`
-  color: ${(props) => props.theme.gradientHighlightRight};
+  color: ${(props) => props.theme.highlight};
+  font-weight: 600;
 `
 
 const Subtitle = styled.p`
@@ -109,12 +112,16 @@ const Socials = styled.div`
 `
 
 const Icon = styled.a`
-  font-size: 3rem;
+  font-size: 2rem;
   color: ${(props) => props.theme.color};
 
   & + & {
     margin-left: 2rem;
   }
+
+  ${lg`
+    font-size: 3rem;
+  `}
 `
 
 const HomePage = () => {
@@ -154,6 +161,9 @@ const HomePage = () => {
               </Icon>
               <Icon href="https://github.com/dijonmusters">
                 <FaGithub />
+              </Icon>
+              <Icon href="https://egghead.io/q/resources-by-jon-meyers">
+                <FaEgg />
               </Icon>
             </Socials>
           </Words>

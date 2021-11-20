@@ -3,8 +3,8 @@ import styled from 'styled-components'
 import { IoIosArrowRoundBack } from 'react-icons/io'
 
 const Container = styled.div`
-  background: ${(props) => props.theme.offBackground3};
-  color: ${(props) => props.theme.offColor3};
+  background: ${(props) => props.theme.offBackground};
+  color: ${(props) => props.theme.mutedTextOnGray};
   margin-bottom: 3rem;
 `
 
