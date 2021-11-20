@@ -2,7 +2,7 @@ node_modules/
 .next/
 .DS_Store
 out/
-.env
+.env.local
 TODO
 
 .vercel
