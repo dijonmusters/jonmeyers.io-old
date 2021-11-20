@@ -8,6 +8,7 @@ import { Client } from '@notionhq/client'
 import slugify from 'utils/slugify'
 import { NotionBlocksHtmlParser } from '@notion-stuff/blocks-html-parser'
 import Body from 'components/Body'
+import { useState } from 'react'
 
 const Title = styled.h1`
   margin: 3rem 0;
@@ -18,10 +19,13 @@ const Title = styled.h1`
 `
 
 const VideoContainer = styled.div`
+  visibility: ${(props) => (props.videoIsReady ? 'visible' : 'hidden')};
+  opacity: ${(props) => (props.videoIsReady ? 1 : 0)};
   position: relative;
   margin-top: 4rem;
   margin-bottom: 4rem;
   padding-top: 56.25%;
+  transition: opacity 0.3s ease-in-out;
 
   &:before {
     content: '';
@@ -41,6 +45,8 @@ const VideoPlayer = styled(Player)`
 `
 
 const Lesson = ({ lesson }) => {
+  const [videoIsReady, setVideoIsReady] = useState(false)
+
   const breadcrumbTitle = lesson.isPartOfSeries
     ? lesson.seriesTitle
     : 'All Videos'
@@ -48,17 +54,22 @@ const Lesson = ({ lesson }) => {
     ? `/video-series/${lesson.seriesSlug}`
     : '/videos'
 
+  const handleFade = () => {
+    setVideoIsReady(true)
+  }
+
   return (
     <Container>
       <SEO title={lesson.title} description={lesson.description} />
       <Breadcrumbs title={breadcrumbTitle} slug={breadcrumbSlug} />
       <Title>{lesson.title}</Title>
-      <VideoContainer>
+      <VideoContainer videoIsReady={videoIsReady}>
         <VideoPlayer
           width="100%"
           height="100%"
           url={lesson.videoUrl}
           controls={true}
+          onReady={handleFade}
         />
       </VideoContainer>
       <Body html={lesson.html} />
