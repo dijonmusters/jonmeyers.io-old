@@ -191,7 +191,7 @@ export const getStaticProps = async () => {
       const collection = videosInSeries.results.slice(0, 3).map((video) => ({
         title: video.properties.Name.title[0].plain_text,
         positionInSeries: video.properties['Position in Series'].number,
-        slug: `/video/${slugify(video.properties.Name.title[0].plain_text)}`,
+        slug: `/videos/${slugify(video.properties.Name.title[0].plain_text)}`,
         category: video.properties.Category.select.name,
       }))
 
