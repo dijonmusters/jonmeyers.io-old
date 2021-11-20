@@ -142,15 +142,15 @@ const HomePage = () => {
               />
             </MobileWrapper>
             <Subtitle>
-              I write{' '}
+              I teach people web development through{' '}
               <Link href="/blog">
                 <OppositeHighlight>articles</OppositeHighlight>
               </Link>{' '}
               and{' '}
-              <Link href="/courses">
-                <OppositeHighlight>courses</OppositeHighlight>
-              </Link>{' '}
-              about web development.
+              <Link href="/videos">
+                <OppositeHighlight>video tutorials</OppositeHighlight>
+              </Link>
+              .
             </Subtitle>
             <Socials>
               <Icon href="https://twitter.com/_dijonmusters">
