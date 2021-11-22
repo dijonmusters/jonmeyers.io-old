@@ -7,6 +7,11 @@ const Root = styled.ul`
   list-style: none;
   margin: 0;
   padding: 0;
+  margin: -1rem;
+
+  ${lg`
+    margin: unset
+  `}
 `
 
 const ListItem = styled.li`
@@ -37,13 +42,12 @@ const LinkItem = styled(Link)`
   position: relative;
   font-size: 1.25rem;
   font-weight: 200;
-  padding: 1rem 0;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
 
   ${lg`
     font-size: 1.5rem;
-    padding: 1rem;
   `};
 
   &:hover {
@@ -56,7 +60,7 @@ const UnstyledLink = styled.a`
   position: relative;
   font-size: 1.25rem;
   font-weight: 200;
-  padding: 1rem 0;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
 

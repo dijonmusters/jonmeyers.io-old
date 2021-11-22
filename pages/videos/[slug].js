@@ -34,6 +34,7 @@ const VideoContainer = styled.div`
     top: -0.5rem;
     width: calc(100% + 1rem);
     height: calc(100% + 1rem);
+    border-radius: ${(props) => props.theme.borderRadius};
     background-image: ${(props) => props.theme.gradient};
   }
 `

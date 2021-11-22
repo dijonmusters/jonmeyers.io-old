@@ -9,6 +9,7 @@ const common = {
   nightOwlOffBackground: 'hsl(0, 0%, 18%)',
   gradient: `linear-gradient(90deg, ${purple}, ${teal})`,
   highlightMidway: 'hsl(206, 72%, 55%)',
+  borderRadius: '5px',
 }
 
 const lightTheme = {

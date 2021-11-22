@@ -57,6 +57,9 @@ const Html = styled.div`
 
   img {
     width: 100%;
+    border-radius: 5px;
+    background-image: ${(props) => props.theme.gradient};
+    padding: 0.5rem;
   }
 
   pre {
