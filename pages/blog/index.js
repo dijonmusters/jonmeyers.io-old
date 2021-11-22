@@ -27,7 +27,7 @@ const Centered = styled.h2`
 const BlogList = ({ articles }) => (
   <>
     <SEO
-      title="Yet another blog"
+      title="Blog"
       description="A collection of developer-focused, practical, web development blog posts written by Jon Meyers."
     />
     <Container>

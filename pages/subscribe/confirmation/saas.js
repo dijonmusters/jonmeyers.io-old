@@ -1,6 +1,7 @@
 import Container from 'components/Container'
 import styled from 'styled-components'
 import { lg } from 'utils/mediaQueries'
+import SEO from 'components/SEO'
 
 const Page = styled(Container)`
   display: flex;
@@ -31,10 +32,16 @@ const Text = styled.p`
 
 const ConfirmationSaaS = () => {
   return (
-    <Page>
-      <Title>Thanks for signing up!</Title>
-      <Text>I will let you know when the course is live!</Text>
-    </Page>
+    <>
+      <SEO
+        title="Subscribed to SaaS course on egghead"
+        description="Subscribed to the upcoming egghead course building a SaaS product using Next.js, Supabase and Stripe."
+      />
+      <Page>
+        <Title>Thanks for signing up!</Title>
+        <Text>I will let you know when the course is live!</Text>
+      </Page>
+    </>
   )
 }
 

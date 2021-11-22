@@ -4,8 +4,7 @@ import { useState } from 'react'
 import styled from 'styled-components'
 import { lg } from 'utils/mediaQueries'
 import EmailValidator from 'email-validator'
-
-// TODO! Add a loading state while submitting
+import SEO from 'components/SEO'
 
 const Form = styled.form`
   flex: 1;
@@ -93,22 +92,28 @@ const SaaSMailingListPage = () => {
   }
 
   return (
-    <Container>
-      <Form onSubmit={handleSubmit}>
-        <Title>Want to know when the course is live?</Title>
-        <InputWrapper>
-          <Input
-            type="email"
-            placeholder="Email Address"
-            value={emailInput}
-            onChange={handleInput}
-            disabled={isLoading}
-          />
-          <Button disabled={isLoading || !isEmailValid}>Let me know!</Button>
-        </InputWrapper>
-        {responseMessage && <p>{responseMessage}</p>}
-      </Form>
-    </Container>
+    <>
+      <SEO
+        title="Subscribe for SaaS course on egghead"
+        description="Subscribe to the upcoming egghead course building a SaaS product using Next.js, Supabase and Stripe."
+      />
+      <Container>
+        <Form onSubmit={handleSubmit}>
+          <Title>Want to know when the course is live?</Title>
+          <InputWrapper>
+            <Input
+              type="email"
+              placeholder="Email Address"
+              value={emailInput}
+              onChange={handleInput}
+              disabled={isLoading}
+            />
+            <Button disabled={isLoading || !isEmailValid}>Let me know!</Button>
+          </InputWrapper>
+          {responseMessage && <p>{responseMessage}</p>}
+        </Form>
+      </Container>
+    </>
   )
 }
 

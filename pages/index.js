@@ -4,6 +4,7 @@ import Container from 'components/Container'
 import Image from 'next/image'
 import { FaTwitter, FaGithub, FaYoutube, FaEgg } from 'react-icons/fa'
 import Link from 'components/Link'
+import SEO from 'components/SEO'
 
 const Root = styled(Container)`
   display: flex;
@@ -126,58 +127,64 @@ const Icon = styled.a`
 
 const HomePage = () => {
   return (
-    <Root>
-      <GradientWrapper>
-        <Wrapper>
-          <Words>
-            <Title>
-              Hi, I'm <Highlight>Jon</Highlight>!
-            </Title>
-            <MobileWrapper>
+    <>
+      <SEO
+        title="Learn web development."
+        description="I teach people web development through articles and video tutorials."
+      />
+      <Root>
+        <GradientWrapper>
+          <Wrapper>
+            <Words>
+              <Title>
+                Hi, I'm <Highlight>Jon</Highlight>!
+              </Title>
+              <MobileWrapper>
+                <RoundedImage
+                  src="/profile.png"
+                  alt="Picture of Jon Meyers"
+                  width={100}
+                  height={100}
+                />
+              </MobileWrapper>
+              <Subtitle>
+                I teach people web development through{' '}
+                <Link href="/blog">
+                  <OppositeHighlight>articles</OppositeHighlight>
+                </Link>{' '}
+                and{' '}
+                <Link href="/videos">
+                  <OppositeHighlight>video tutorials</OppositeHighlight>
+                </Link>
+                .
+              </Subtitle>
+              <Socials>
+                <Icon href="https://twitter.com/_dijonmusters">
+                  <FaTwitter />
+                </Icon>
+                <Icon href="https://www.youtube.com/channel/UCPitAIwktfCfcMR4kDWebDQ">
+                  <FaYoutube />
+                </Icon>
+                <Icon href="https://github.com/dijonmusters">
+                  <FaGithub />
+                </Icon>
+                <Icon href="https://egghead.io/q/resources-by-jon-meyers">
+                  <FaEgg />
+                </Icon>
+              </Socials>
+            </Words>
+            <ImgWrapper>
               <RoundedImage
                 src="/profile.png"
                 alt="Picture of Jon Meyers"
-                width={100}
-                height={100}
+                width={500}
+                height={500}
               />
-            </MobileWrapper>
-            <Subtitle>
-              I teach people web development through{' '}
-              <Link href="/blog">
-                <OppositeHighlight>articles</OppositeHighlight>
-              </Link>{' '}
-              and{' '}
-              <Link href="/videos">
-                <OppositeHighlight>video tutorials</OppositeHighlight>
-              </Link>
-              .
-            </Subtitle>
-            <Socials>
-              <Icon href="https://twitter.com/_dijonmusters">
-                <FaTwitter />
-              </Icon>
-              <Icon href="https://www.youtube.com/channel/UCPitAIwktfCfcMR4kDWebDQ">
-                <FaYoutube />
-              </Icon>
-              <Icon href="https://github.com/dijonmusters">
-                <FaGithub />
-              </Icon>
-              <Icon href="https://egghead.io/q/resources-by-jon-meyers">
-                <FaEgg />
-              </Icon>
-            </Socials>
-          </Words>
-          <ImgWrapper>
-            <RoundedImage
-              src="/profile.png"
-              alt="Picture of Jon Meyers"
-              width={500}
-              height={500}
-            />
-          </ImgWrapper>
-        </Wrapper>
-      </GradientWrapper>
-    </Root>
+            </ImgWrapper>
+          </Wrapper>
+        </GradientWrapper>
+      </Root>
+    </>
   )
 }
 

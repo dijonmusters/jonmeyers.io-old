@@ -26,8 +26,8 @@ const Videos = ({ videos }) => {
   return (
     <>
       <SEO
-        title="Even more videos"
-        description="A collection of developer-focused, practical, web development videos written by Jon Meyers."
+        title="Videos"
+        description="A collection of developer-focused, practical, web development video tutorials by Jon Meyers."
       />
       <Container>
         {videos.length > 0 ? (
