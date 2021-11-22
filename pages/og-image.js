@@ -64,7 +64,6 @@ const Twitter = styled.p`
   color: #a1a1a1;
   position: absolute;
   bottom: 1rem;
-  /* right: 2rem; */
   display: flex;
   align-items: center;
 `
