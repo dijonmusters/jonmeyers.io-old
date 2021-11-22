@@ -5,7 +5,7 @@ const Sitemap = () => {}
 
 export const getServerSideProps = async ({ res }) => {
   const baseUrl = process.env.BASE_URL
-  const staticPages = ['/', '/blog', '/courses', 'videos']
+  const staticPages = ['/', '/blog', '/videos']
 
   const notion = new Client({
     auth: process.env.NOTION_SECRET,
@@ -30,6 +30,8 @@ export const getServerSideProps = async ({ res }) => {
     individual = [...individual, ...data.results]
   } while (data?.has_more)
 
+  data = {}
+
   do {
     data = await notion.databases.query({
       database_id: process.env.SERIES_DATABASE_ID,
@@ -49,45 +51,48 @@ export const getServerSideProps = async ({ res }) => {
     const endPath = slugify(result.properties.Name.title[0].plain_text)
     let middlePath = ''
 
-    switch (result.properties.Category) {
+    switch (result.properties.Category.select.name) {
       case 'Article':
-        path = `/blog/`
+        middlePath = `blog`
         break
       case 'Series Article':
-        path = `/blog/`
+        middlePath = `blog`
         break
       case 'Video':
-        path = `/lesson/`
+        middlePath = `videos`
         break
       case 'Series Video':
-        path = `/lesson/`
+        middlePath = `videos`
         break
       default:
-        path = `/unknown/`
+        middlePath = `unknown`
         break
     }
-    return `${middlePath}${endPath}`
+    return `/${middlePath}/${endPath}`
   })
 
   const seriesSlugs = series.map((result) => {
     const endPath = slugify(result.properties.Name.title[0].plain_text)
     let middlePath = ''
 
-    switch (result.properties.Category) {
+    switch (result.properties.Category.select.name) {
       case 'Article':
-        path = `/series/`
+        middlePath = `blog-series`
         break
       case 'Video':
-        path = `/videos/`
+        middlePath = `video-series`
         break
       default:
-        path = `/unknown/`
+        middlePath = `unknown`
         break
     }
-    return `${middlePath}${endPath}`
+    return `/${middlePath}/${endPath}`
   })
 
-  const dynamicPages = [...individualSlugs, ...seriesSlugs]
+  // filter out external links
+  const dynamicPages = [...individualSlugs, ...seriesSlugs].filter(
+    (slug) => !slug.includes('/unknown/')
+  )
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
