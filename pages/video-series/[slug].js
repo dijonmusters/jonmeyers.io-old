@@ -14,7 +14,7 @@ const Title = styled.h1`
   `}
 `
 
-const Description = styled.p`
+const Description = styled.div`
   line-height: 32px;
   margin: 1.5rem 0;
   font-size: 1.25rem;
@@ -26,13 +26,13 @@ const Fallback = styled.p`
   font-weight: 600;
 `
 
-const Video = ({ video: { title, description, lessons } }) => {
+const Video = ({ video: { title, description, htmlDescription, lessons } }) => {
   return (
     <Container>
       <SEO title={title} description={description} />
       <Breadcrumbs title="All videos" slug="/videos" />
       <Title>{title}</Title>
-      <Description>{description}</Description>
+      <Description dangerouslySetInnerHTML={{ __html: htmlDescription }} />
       {lessons.length > 0 ? (
         <NumberedList items={lessons} individualPath="/videos" />
       ) : (
@@ -120,10 +120,23 @@ export const getStaticProps = async ({ params: { slug } }) => {
     block_id: seriesMetadata.id,
   })
 
+  const blocks = pageData.results.map((block) => {
+    // Replace h1 with h2 - only the title should be h1 on the page
+    if (block.type === 'heading_1') {
+      const { heading_1, ...restOfBlock } = block
+
+      return {
+        ...restOfBlock,
+        type: 'heading_2',
+        heading_2: block.heading_1,
+      }
+    }
+
+    return block
+  })
+
   const title = seriesMetadata.properties.Name.title[0].plain_text
-  const description = NotionBlocksHtmlParser.getInstance().parse(
-    pageData.results
-  )
+  const description = NotionBlocksHtmlParser.getInstance().parse(blocks)
 
   const videosInSeries = await notion.databases.query({
     database_id: process.env.ARTICLES_DATABASE_ID,

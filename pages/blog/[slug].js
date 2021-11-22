@@ -211,10 +211,25 @@ export const getStaticProps = async ({ params: { slug } }) => {
     }
   }
 
+  const blocks = blockResults.map((block) => {
+    // Replace h1 with h2 - only the title should be h1 on the page
+    if (block.type === 'heading_1') {
+      const { heading_1, ...restOfBlock } = block
+
+      return {
+        ...restOfBlock,
+        type: 'heading_2',
+        heading_2: block.heading_1,
+      }
+    }
+
+    return block
+  })
+
   const article = {
     title: pageMetaData.properties.Name.title[0].plain_text,
     description: pageMetaData.properties.Description.rich_text[0].plain_text,
-    html: NotionBlocksHtmlParser.getInstance().parse(blockResults),
+    html: NotionBlocksHtmlParser.getInstance().parse(blocks),
     ...articleData,
   }
 
