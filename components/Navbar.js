@@ -6,23 +6,16 @@ import Link from 'components/Link'
 import { useRouter } from 'next/router'
 
 const navMap = {
-  blog: {
-    options: ['blog', 'series'],
-    subtitle: 'yet another blog',
-  },
-  videos: {
-    options: ['courses', 'lessons', 'videos'],
-    subtitle: 'another video tutorial',
-  },
+  articles: ['blog', 'blog-series'],
+  videos: ['videos', 'video-series'],
 }
 
-const Navbar = ({ className, href }) => {
+const Navbar = ({ className }) => {
   const router = useRouter()
   const [, path] = router.pathname.split('/')
+
   const pathConfig =
-    navMap[
-      Object.keys(navMap).filter((item) => navMap[item].options.includes(path))
-    ]
+    navMap[Object.keys(navMap).filter((item) => navMap[item].includes(path))]
 
   return (
     <Nav className={className}>
@@ -32,25 +25,25 @@ const Navbar = ({ className, href }) => {
           <TextWrapper>
             <Title>
               Jon Meyers
-              <Subtitle>{pathConfig?.subtitle || 'Educator'}</Subtitle>
+              <Subtitle>.io</Subtitle>
             </Title>
           </TextWrapper>
         </LogoLink>
         <DesktopMenu>
-          <Item isActive={pathConfig?.options.includes('blog')}>
+          <Item isActive={pathConfig?.includes('blog')}>
             <LinkItem href="/blog">Articles</LinkItem>
           </Item>
-          <Item isActive={pathConfig?.options.includes('videos')}>
+          <Item isActive={pathConfig?.includes('videos')}>
             <LinkItem href="/videos">Videos</LinkItem>
           </Item>
         </DesktopMenu>
         <DarkmodeButton />
       </Wrapper>
       <MobileMenu>
-        <Item isActive={pathConfig?.options.includes('blog')}>
+        <Item isActive={pathConfig?.includes('blog')}>
           <LinkItem href="/blog">Articles</LinkItem>
         </Item>
-        <Item isActive={pathConfig?.options.includes('videos')}>
+        <Item isActive={pathConfig?.includes('videos')}>
           <LinkItem href="/videos">Videos</LinkItem>
         </Item>
       </MobileMenu>
@@ -122,12 +115,15 @@ const Title = styled.h1`
 `
 
 const Subtitle = styled.span`
-  position: absolute;
-  right: 0.25rem;
-  bottom: -1rem;
-  font-size: 1rem;
+  display: block;
+  font-size: 1.5rem;
   color: ${(props) => props.theme.color};
-  font-weight: 200;
+  font-weight: 500;
+  text-align: right;
+
+  ${lg`
+    display: inline;
+  `}
 `
 
 const DarkmodeButton = styled(DarkModeToggle)`
