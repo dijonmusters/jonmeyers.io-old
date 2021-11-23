@@ -10,7 +10,7 @@ const handler = async (req, res) => {
   const { title } = req.query
   try {
     const imageUrl = cloudinary.url(
-      `${process.env.CLOUDINARY_IMAGE_VERSION}/og-images/img-1.png`,
+      `${process.env.CLOUDINARY_IMAGE_VERSION}/og-images/img-2.png`,
       {
         sign_url: true,
         custom_pre_function: {
