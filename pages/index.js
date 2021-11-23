@@ -131,7 +131,7 @@ const HomePage = () => {
   return (
     <>
       <SEO
-        title="Learn web development."
+        title="Learn web development"
         description="I teach people web development through articles and video tutorials."
       />
       <Root>
