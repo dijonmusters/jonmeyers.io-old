@@ -47,27 +47,34 @@ export const getStaticPaths = async () => {
     auth: process.env.NOTION_SECRET,
   })
 
-  const series = await notion.databases.query({
-    database_id: process.env.SERIES_DATABASE_ID,
-    filter: {
-      and: [
-        {
-          property: 'Category',
-          select: {
-            equals: 'Video',
-          },
-        },
-        {
-          property: 'Status',
-          select: {
-            equals: 'Published',
-          },
-        },
-      ],
-    },
-  })
+  let data = {}
+  let series = []
 
-  const paths = series.results.map((result) => ({
+  do {
+    data = await notion.databases.query({
+      database_id: process.env.SERIES_DATABASE_ID,
+      filter: {
+        and: [
+          {
+            property: 'Category',
+            select: {
+              equals: 'Video',
+            },
+          },
+          {
+            property: 'Status',
+            select: {
+              equals: 'Published',
+            },
+          },
+        ],
+      },
+    })
+
+    series = [...series, ...data.results]
+  } while (data?.has_more)
+
+  const paths = series.map((result) => ({
     params: {
       slug: slugify(result.properties.Name.title[0].plain_text),
     },
@@ -138,39 +145,46 @@ export const getStaticProps = async ({ params: { slug } }) => {
   const title = seriesMetadata.properties.Name.title[0].plain_text
   const description = NotionBlocksHtmlParser.getInstance().parse(blocks)
 
-  const videosInSeries = await notion.databases.query({
-    database_id: process.env.ARTICLES_DATABASE_ID,
-    filter: {
-      and: [
-        {
-          property: 'Category',
-          select: {
-            equals: 'Series Video',
+  let videosInSeries = []
+  data = {}
+
+  do {
+    data = await await notion.databases.query({
+      database_id: process.env.ARTICLES_DATABASE_ID,
+      filter: {
+        and: [
+          {
+            property: 'Category',
+            select: {
+              equals: 'Series Video',
+            },
           },
-        },
-        {
-          property: 'Status',
-          select: {
-            equals: 'Published',
+          {
+            property: 'Status',
+            select: {
+              equals: 'Published',
+            },
           },
-        },
-        {
-          property: 'Series',
-          relation: {
-            contains: seriesMetadata.id,
+          {
+            property: 'Series',
+            relation: {
+              contains: seriesMetadata.id,
+            },
           },
+        ],
+      },
+      sorts: [
+        {
+          property: 'Position in Series',
+          direction: 'ascending',
         },
       ],
-    },
-    sorts: [
-      {
-        property: 'Position in Series',
-        direction: 'ascending',
-      },
-    ],
-  })
+    })
 
-  const lessons = videosInSeries.results.map((video) => ({
+    videosInSeries = [...videosInSeries, ...data.results]
+  } while (data?.has_more)
+
+  const lessons = videosInSeries.map((video) => ({
     title: video.properties.Name.title[0].plain_text,
     positionInSeries: video.properties['Position in Series'].number,
     slug: slugify(video.properties.Name.title[0].plain_text),

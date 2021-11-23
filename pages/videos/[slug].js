@@ -178,39 +178,45 @@ export const getStaticProps = async ({ params: { slug } }) => {
   let videoData = {}
 
   if (pageMetaData.properties.Category.select.name === 'Series Video') {
-    const videosInSeriesResults = await notion.databases.query({
-      database_id: process.env.ARTICLES_DATABASE_ID,
-      filter: {
-        and: [
-          {
-            property: 'Category',
-            select: {
-              equals: 'Series Video',
+    let videosInSeries = []
+    data = {}
+
+    do {
+      data = await notion.databases.query({
+        database_id: process.env.ARTICLES_DATABASE_ID,
+        filter: {
+          and: [
+            {
+              property: 'Category',
+              select: {
+                equals: 'Series Video',
+              },
             },
-          },
-          {
-            property: 'Status',
-            select: {
-              equals: 'Published',
+            {
+              property: 'Status',
+              select: {
+                equals: 'Published',
+              },
             },
-          },
-          {
-            property: 'Series',
-            relation: {
-              contains: pageMetaData.properties.Series.relation[0].id,
+            {
+              property: 'Series',
+              relation: {
+                contains: pageMetaData.properties.Series.relation[0].id,
+              },
             },
+          ],
+        },
+        sorts: [
+          {
+            property: 'Position in Series',
+            direction: 'ascending',
           },
         ],
-      },
-      sorts: [
-        {
-          property: 'Position in Series',
-          direction: 'ascending',
-        },
-      ],
-    })
+      })
+      videosInSeries = [...videosInSeries, ...data.results]
+    } while (data?.has_more)
 
-    const videosInSeries = videosInSeriesResults.results.map((video) => ({
+    videosInSeries = videosInSeries.map((video) => ({
       title: video.properties.Name.title[0].plain_text,
       positionInSeries: video.properties['Position in Series'].number,
       slug: slugify(video.properties.Name.title[0].plain_text),

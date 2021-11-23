@@ -147,51 +147,56 @@ export const getStaticProps = async () => {
 
   seriesArticles = await Promise.all(
     seriesArticles.map(async (series) => {
-      const articlesInSeries = await notion.databases.query({
-        database_id: process.env.ARTICLES_DATABASE_ID,
-        filter: {
-          and: [
-            {
-              property: 'Category',
-              select: {
-                equals: 'Series Article',
+      data = {}
+      let articlesInSeries = []
+
+      do {
+        data = await notion.databases.query({
+          database_id: process.env.ARTICLES_DATABASE_ID,
+          filter: {
+            and: [
+              {
+                property: 'Category',
+                select: {
+                  equals: 'Series Article',
+                },
               },
-            },
-            {
-              property: 'Status',
-              select: {
-                equals: 'Published',
+              {
+                property: 'Status',
+                select: {
+                  equals: 'Published',
+                },
               },
-            },
-            {
-              property: 'Series',
-              relation: {
-                contains: series.id,
+              {
+                property: 'Series',
+                relation: {
+                  contains: series.id,
+                },
               },
+            ],
+          },
+          sorts: [
+            {
+              property: 'Position in Series',
+              direction: 'ascending',
             },
           ],
-        },
-        sorts: [
-          {
-            property: 'Position in Series',
-            direction: 'ascending',
-          },
-        ],
-      })
+        })
+
+        articlesInSeries = [...articlesInSeries, ...data.results]
+      } while (data?.has_more)
 
       const title = series.properties.Name.title[0].plain_text
       const slug = `/blog-series/${slugify(title)}`
       const publishedDate = series.properties['Published Date'].date.start
-      const itemsInCollection = articlesInSeries.results.length
+      const itemsInCollection = articlesInSeries.length
       const category = 'Series'
-      const collection = articlesInSeries.results
-        .slice(0, 3)
-        .map((article) => ({
-          title: article.properties.Name.title[0].plain_text,
-          positionInSeries: article.properties['Position in Series'].number,
-          slug: `/blog/${slugify(article.properties.Name.title[0].plain_text)}`,
-          category: article.properties.Category.select.name,
-        }))
+      const collection = articlesInSeries.slice(0, 3).map((article) => ({
+        title: article.properties.Name.title[0].plain_text,
+        positionInSeries: article.properties['Position in Series'].number,
+        slug: `/blog/${slugify(article.properties.Name.title[0].plain_text)}`,
+        category: article.properties.Category.select.name,
+      }))
 
       return {
         title,

@@ -151,44 +151,51 @@ export const getStaticProps = async () => {
 
   seriesVideos = await Promise.all(
     seriesVideos.map(async (series) => {
-      const videosInSeries = await notion.databases.query({
-        database_id: process.env.ARTICLES_DATABASE_ID,
-        filter: {
-          and: [
-            {
-              property: 'Category',
-              select: {
-                equals: 'Series Video',
+      data = {}
+      let videosInSeries = []
+
+      do {
+        data = await notion.databases.query({
+          database_id: process.env.ARTICLES_DATABASE_ID,
+          filter: {
+            and: [
+              {
+                property: 'Category',
+                select: {
+                  equals: 'Series Video',
+                },
               },
-            },
-            {
-              property: 'Status',
-              select: {
-                equals: 'Published',
+              {
+                property: 'Status',
+                select: {
+                  equals: 'Published',
+                },
               },
-            },
-            {
-              property: 'Series',
-              relation: {
-                contains: series.id,
+              {
+                property: 'Series',
+                relation: {
+                  contains: series.id,
+                },
               },
+            ],
+          },
+          sorts: [
+            {
+              property: 'Position in Series',
+              direction: 'ascending',
             },
           ],
-        },
-        sorts: [
-          {
-            property: 'Position in Series',
-            direction: 'ascending',
-          },
-        ],
-      })
+        })
+
+        videosInSeries = [...videosInSeries, ...data.results]
+      } while (data?.has_more)
 
       const title = series.properties.Name.title[0].plain_text
       const slug = `/video-series/${slugify(title)}`
       const publishedDate = series.properties['Published Date'].date.start
-      const itemsInCollection = videosInSeries.results.length
+      const itemsInCollection = videosInSeries.length
       const category = 'Series'
-      const collection = videosInSeries.results.slice(0, 3).map((video) => ({
+      const collection = videosInSeries.slice(0, 3).map((video) => ({
         title: video.properties.Name.title[0].plain_text,
         positionInSeries: video.properties['Position in Series'].number,
         slug: `/videos/${slugify(video.properties.Name.title[0].plain_text)}`,

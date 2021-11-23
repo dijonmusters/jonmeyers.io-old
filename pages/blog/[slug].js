@@ -159,39 +159,46 @@ export const getStaticProps = async ({ params: { slug } }) => {
   let articleData = {}
 
   if (pageMetaData.properties.Category.select.name === 'Series Article') {
-    const articlesInSeriesResults = await notion.databases.query({
-      database_id: process.env.ARTICLES_DATABASE_ID,
-      filter: {
-        and: [
-          {
-            property: 'Category',
-            select: {
-              equals: 'Series Article',
+    data = {}
+    let articlesInSeries = []
+
+    do {
+      data = await notion.databases.query({
+        database_id: process.env.ARTICLES_DATABASE_ID,
+        filter: {
+          and: [
+            {
+              property: 'Category',
+              select: {
+                equals: 'Series Article',
+              },
             },
-          },
-          {
-            property: 'Status',
-            select: {
-              equals: 'Published',
+            {
+              property: 'Status',
+              select: {
+                equals: 'Published',
+              },
             },
-          },
-          {
-            property: 'Series',
-            relation: {
-              contains: pageMetaData.properties.Series.relation[0].id,
+            {
+              property: 'Series',
+              relation: {
+                contains: pageMetaData.properties.Series.relation[0].id,
+              },
             },
+          ],
+        },
+        sorts: [
+          {
+            property: 'Position in Series',
+            direction: 'ascending',
           },
         ],
-      },
-      sorts: [
-        {
-          property: 'Position in Series',
-          direction: 'ascending',
-        },
-      ],
-    })
+      })
 
-    const articlesInSeries = articlesInSeriesResults.results.map((article) => ({
+      articlesInSeries = [...articlesInSeries, ...data.results]
+    } while (data?.has_more)
+
+    articlesInSeries = articlesInSeries.map((article) => ({
       title: article.properties.Name.title[0].plain_text,
       positionInSeries: article.properties['Position in Series'].number,
       slug: slugify(article.properties.Name.title[0].plain_text),
