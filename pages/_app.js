@@ -1,9 +1,10 @@
-import styled, { createGlobalStyle } from 'styled-components'
+import styled from 'styled-components'
 import { Normalize } from 'styled-normalize'
 import ThemeProvider from 'context/Theme'
 import DarkModeProvider from 'context/DarkMode'
 import { darkTheme, lightTheme } from 'utils/theme'
 import Navbar from 'components/Navbar'
+import GlobalStyles from 'styles/global'
 
 const Container = styled.div`
   background: ${(props) => props.theme.background};
@@ -27,12 +28,6 @@ const Main = styled.main`
   flex: 1;
   width: 100%;
   display: flex;
-`
-
-const GlobalStyles = createGlobalStyle`
-  * {
-    box-sizing: border-box;
-  }
 `
 
 const MyApp = ({ Component, pageProps }) => {

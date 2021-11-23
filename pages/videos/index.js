@@ -1,18 +1,10 @@
 import styled from 'styled-components'
 import Container from 'components/Container'
-import ContentList from 'components/ContentList'
 import { lg } from 'utils/mediaQueries'
 import SEO from 'components/SEO'
-import slugify from 'utils/slugify'
+import ContentList from 'components/ContentList'
 import { Client } from '@notionhq/client'
-
-const ArticleList = styled(ContentList)`
-  max-width: 100vw;
-
-  ${lg`
-    padding: 0 2rem;
-  `};
-`
+import slugify from 'utils/slugify'
 
 const Centered = styled.h2`
   text-align: center;
@@ -24,30 +16,38 @@ const Centered = styled.h2`
   `};
 `
 
-const BlogList = ({ articles }) => (
-  <>
-    <SEO
-      title="Blog"
-      description="A collection of developer-focused, practical, web development blog posts written by Jon Meyers."
-    />
-    <Container>
-      {articles.length > 0 ? (
-        <ArticleList content={articles} />
-      ) : (
-        <Centered>No blog posts!</Centered>
-      )}
-    </Container>
-  </>
-)
+const CourseList = styled(ContentList)`
+  ${lg`
+    padding: 0 2rem;
+  `};
+`
+
+const Videos = ({ videos }) => {
+  return (
+    <>
+      <SEO
+        title="Videos"
+        description="A collection of developer-focused, practical, web development video tutorials by Jon Meyers."
+      />
+      <Container>
+        {videos.length > 0 ? (
+          <CourseList content={videos} />
+        ) : (
+          <Centered>No blog posts!</Centered>
+        )}
+      </Container>
+    </>
+  )
+}
 
 export const getStaticProps = async () => {
   const notion = new Client({
     auth: process.env.NOTION_SECRET,
   })
 
-  let individualArticles = []
-  let externalArticles = []
-  let seriesArticles = []
+  let individualVideos = []
+  let externalVideos = []
+  let seriesVideos = []
   let data = {}
 
   do {
@@ -58,7 +58,7 @@ export const getStaticProps = async () => {
           {
             property: 'Category',
             select: {
-              equals: 'Article',
+              equals: 'Video',
             },
           },
           {
@@ -72,15 +72,15 @@ export const getStaticProps = async () => {
       start_cursor: data?.next_cursor,
     })
 
-    individualArticles = [...individualArticles, ...data.results]
+    individualVideos = [...individualVideos, ...data.results]
   } while (data?.has_more)
 
-  individualArticles = individualArticles.map((article) => ({
-    title: article.properties.Name.title[0].plain_text,
-    slug: `/blog/${slugify(article.properties.Name.title[0].plain_text)}`,
-    description: article.properties.Description.rich_text[0].plain_text,
-    publishedDate: article.properties['Published Date'].date.start,
-    category: article.properties.Category.select.name,
+  individualVideos = individualVideos.map((video) => ({
+    title: video.properties.Name.title[0].plain_text,
+    slug: `/videos/${slugify(video.properties.Name.title[0].plain_text)}`,
+    description: video.properties.Description.rich_text[0].plain_text,
+    publishedDate: video.properties['Published Date'].date.start,
+    category: video.properties.Category.select.name,
   }))
 
   data = {}
@@ -89,17 +89,17 @@ export const getStaticProps = async () => {
     data = await notion.databases.query({
       database_id: process.env.ARTICLES_DATABASE_ID,
       filter: {
-        and: [
+        or: [
           {
             property: 'Category',
             select: {
-              equals: 'Article Link',
+              equals: 'Video Link',
             },
           },
           {
-            property: 'Status',
+            property: 'Category',
             select: {
-              equals: 'Published',
+              equals: 'Video Course Link',
             },
           },
         ],
@@ -107,16 +107,20 @@ export const getStaticProps = async () => {
       start_cursor: data?.next_cursor,
     })
 
-    externalArticles = [...externalArticles, ...data.results]
+    externalVideos = [...externalVideos, ...data.results]
   } while (data?.has_more)
 
-  externalArticles = externalArticles.map((article) => ({
-    title: article.properties.Name.title[0].plain_text,
-    url: article.properties.Link.url,
-    description: article.properties.Description.rich_text[0].plain_text,
-    publishedDate: article.properties['Published Date'].date.start,
-    category: article.properties.Category.select.name,
-  }))
+  // need to manually filter for `Published` because we can't
+  // combine an `and` and an `or` in query
+  externalVideos = externalVideos
+    .filter((video) => video.properties.Status.select.name === 'Published')
+    .map((video) => ({
+      title: video.properties.Name.title[0].plain_text,
+      url: video.properties.Link.url,
+      description: video.properties.Description.rich_text[0].plain_text,
+      publishedDate: video.properties['Published Date'].date.start,
+      category: video.properties.Category.select.name,
+    }))
 
   data = {}
 
@@ -128,7 +132,7 @@ export const getStaticProps = async () => {
           {
             property: 'Category',
             select: {
-              equals: 'Article',
+              equals: 'Video',
             },
           },
           {
@@ -142,13 +146,13 @@ export const getStaticProps = async () => {
       start_cursor: data?.next_cursor,
     })
 
-    seriesArticles = [...seriesArticles, ...data.results]
+    seriesVideos = [...seriesVideos, ...data.results]
   } while (data?.has_more)
 
-  seriesArticles = await Promise.all(
-    seriesArticles.map(async (series) => {
+  seriesVideos = await Promise.all(
+    seriesVideos.map(async (series) => {
       data = {}
-      let articlesInSeries = []
+      let videosInSeries = []
 
       do {
         data = await notion.databases.query({
@@ -158,7 +162,7 @@ export const getStaticProps = async () => {
               {
                 property: 'Category',
                 select: {
-                  equals: 'Series Article',
+                  equals: 'Series Video',
                 },
               },
               {
@@ -183,19 +187,19 @@ export const getStaticProps = async () => {
           ],
         })
 
-        articlesInSeries = [...articlesInSeries, ...data.results]
+        videosInSeries = [...videosInSeries, ...data.results]
       } while (data?.has_more)
 
       const title = series.properties.Name.title[0].plain_text
-      const slug = `/blog-series/${slugify(title)}`
+      const slug = `/video-series/${slugify(title)}`
       const publishedDate = series.properties['Published Date'].date.start
-      const itemsInCollection = articlesInSeries.length
+      const itemsInCollection = videosInSeries.length
       const category = 'Series'
-      const collection = articlesInSeries.slice(0, 3).map((article) => ({
-        title: article.properties.Name.title[0].plain_text,
-        positionInSeries: article.properties['Position in Series'].number,
-        slug: `/blog/${slugify(article.properties.Name.title[0].plain_text)}`,
-        category: article.properties.Category.select.name,
+      const collection = videosInSeries.slice(0, 3).map((video) => ({
+        title: video.properties.Name.title[0].plain_text,
+        positionInSeries: video.properties['Position in Series'].number,
+        slug: `/videos/${slugify(video.properties.Name.title[0].plain_text)}`,
+        category: video.properties.Category.select.name,
       }))
 
       return {
@@ -209,18 +213,16 @@ export const getStaticProps = async () => {
     })
   )
 
-  const articles = [
-    ...individualArticles,
-    ...seriesArticles,
-    ...externalArticles,
-  ].sort((a, b) => new Date(b.publishedDate) - new Date(a.publishedDate))
+  const videos = [...individualVideos, ...seriesVideos, ...externalVideos].sort(
+    (a, b) => new Date(b.publishedDate) - new Date(a.publishedDate)
+  )
 
   return {
     props: {
-      articles,
+      videos,
     },
     revalidate: 60,
   }
 }
 
-export default BlogList
+export default Videos

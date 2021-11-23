@@ -7,6 +7,11 @@ const Root = styled.ul`
   list-style: none;
   margin: 0;
   padding: 0;
+  margin: -1rem;
+
+  ${lg`
+    margin: unset
+  `}
 `
 
 const ListItem = styled.li`
@@ -23,7 +28,7 @@ const Title = styled.h2`
 `
 
 const Description = styled.p`
-  color: ${(props) => props.theme.muted2};
+  color: ${(props) => props.theme.muted};
   font-size: 1rem;
   margin: 0;
   padding: 0.25rem 0.75rem;
@@ -37,7 +42,25 @@ const LinkItem = styled(Link)`
   position: relative;
   font-size: 1.25rem;
   font-weight: 200;
-  padding: 1rem 0;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+
+  ${lg`
+    font-size: 1.5rem;
+  `};
+
+  &:hover {
+    background-color: ${(props) => props.theme.hover};
+  }
+`
+
+const UnstyledLink = styled.a`
+  text-decoration: none;
+  position: relative;
+  font-size: 1.25rem;
+  font-weight: 200;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
 
@@ -60,10 +83,10 @@ const Bullet = styled.li`
   position: relative;
   padding: 0.25rem 1.25rem;
   font-size: 1rem;
-  color: ${(props) => props.theme.muted2};
+  color: ${(props) => props.theme.muted};
 
   &:before {
-    background-color: ${(props) => props.theme.separator};
+    background-color: ${(props) => props.theme.muted};
     width: 1px;
     content: '';
     position: absolute;
@@ -78,7 +101,7 @@ const Bullet = styled.li`
 
   &:after {
     width: 0.5rem;
-    border-bottom: solid 1px ${(props) => props.theme.separator};
+    border-bottom: solid 1px ${(props) => props.theme.muted};
     content: '';
     position: absolute;
     left: calc(0.5rem + 1px);
@@ -107,12 +130,12 @@ const Arrow = styled(IoIosArrowRoundForward)`
   font-size: 1.5rem;
 `
 
-const Bullets = ({ item, individualPath, collectionPath }) => (
+const Bullets = ({ item }) => (
   <ConnectedBullets>
     {item.collection.length > 0 ? (
       item.collection.map((individualItem) => (
         <Bullet key={individualItem.slug}>
-          <HoverLink href={`${individualPath}/${individualItem.slug}`}>
+          <HoverLink href={individualItem.slug}>
             {individualItem.title}
           </HoverLink>
         </Bullet>
@@ -122,7 +145,7 @@ const Bullets = ({ item, individualPath, collectionPath }) => (
     )}
     {item.itemsInCollection > 3 && (
       <Bullet>
-        <HoverLink href={`${collectionPath}/${item.slug}`}>
+        <HoverLink href={item.slug}>
           <More>
             {item.itemsInCollection - 3} more <Arrow />
           </More>
@@ -132,51 +155,72 @@ const Bullets = ({ item, individualPath, collectionPath }) => (
   </ConnectedBullets>
 )
 
-const Item = ({ item, listPath, collectionPath, individualPath }) => {
-  const isCollection = !!item.collection
-  const path = isCollection
-    ? `${collectionPath}/${item.slug}`
-    : `${individualPath}/${item.slug}`
-
+const ExternalLink = ({ item }) => {
   return (
     <ListItem>
-      <LinkItem href={path}>
+      <UnstyledLink href={item.url}>
+        <Title>{item.title}</Title>
+        <Description>{item.description}</Description>
+      </UnstyledLink>
+    </ListItem>
+  )
+}
+
+const Series = ({ item }) => {
+  return (
+    <ListItem>
+      <LinkItem href={item.slug}>
         <>
           <Title>{item.title}</Title>
-          {isCollection ? (
-            <Bullets
-              item={item}
-              individualPath={individualPath}
-              collectionPath={collectionPath}
-            />
-          ) : (
-            <Description>{item.description}</Description>
-          )}
+          <Bullets item={item} />
         </>
       </LinkItem>
     </ListItem>
   )
 }
 
-const MultiList = ({
-  children,
-  className,
-  collection,
-  listPath,
-  collectionPath,
-  individualPath,
-}) => (
+const Individual = ({ item }) => {
+  return (
+    <ListItem>
+      <LinkItem href={item.slug}>
+        <>
+          <Title>{item.title}</Title>
+          <Description>{item.description}</Description>
+        </>
+      </LinkItem>
+    </ListItem>
+  )
+}
+
+const Item = ({ item }) => {
+  const isIndividual = item.category === 'Article' || item.category === 'Video'
+  const isSeries = item.category === 'Series'
+  const isLink =
+    item.category === 'Article Link' ||
+    item.category === 'Video Link' ||
+    item.category === 'Video Course Link'
+
+  if (isIndividual) {
+    return <Individual item={item} />
+  }
+
+  if (isSeries) {
+    return <Series item={item} />
+  }
+
+  if (isLink) {
+    return <ExternalLink item={item} />
+  }
+
+  return <p>something is wrong...</p>
+}
+
+const ContentList = ({ className, content }) => (
   <Root className={className}>
-    {collection.map((item) => (
-      <Item
-        key={item.title}
-        item={item}
-        listPath={listPath}
-        collectionPath={collectionPath}
-        individualPath={individualPath}
-      />
+    {content.map((item) => (
+      <Item key={item.title} item={item} />
     ))}
   </Root>
 )
 
-export default MultiList
+export default ContentList

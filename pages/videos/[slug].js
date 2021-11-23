@@ -2,15 +2,13 @@ import Container from 'components/Container'
 import styled from 'styled-components'
 import SEO from 'components/SEO'
 import Breadcrumbs from 'components/Breadcrumbs'
+import Player from 'react-player/lazy'
 import { lg } from 'utils/mediaQueries'
-import slugify from 'utils/slugify'
 import { Client } from '@notionhq/client'
+import slugify from 'utils/slugify'
 import { NotionBlocksHtmlParser } from '@notion-stuff/blocks-html-parser'
-import 'highlight.js/styles/night-owl.css'
-import { useEffect } from 'react'
-import { copyToClipboard } from 'utils/copyToClipboard'
-import TableOfContents from 'components/TableOfContents'
 import Body from 'components/Body'
+import { useState } from 'react'
 
 const Title = styled.h1`
   margin: 3rem 0;
@@ -20,41 +18,62 @@ const Title = styled.h1`
   `}
 `
 
-const Article = ({ article }) => {
-  const breadcrumbTitle = article.isPartOfSeries
-    ? article.seriesTitle
-    : 'All Articles'
-  const breadcrumbSlug = article.isPartOfSeries
-    ? `/blog-series/${article.seriesSlug}`
-    : '/blog'
+const VideoContainer = styled.div`
+  visibility: ${(props) => (props.videoIsReady ? 'visible' : 'hidden')};
+  opacity: ${(props) => (props.videoIsReady ? 1 : 0)};
+  position: relative;
+  margin-top: 4rem;
+  margin-bottom: 4rem;
+  padding-top: 56.25%;
+  transition: opacity 0.3s ease-in-out;
 
-  useEffect(() => {
-    document.querySelectorAll('pre > code').forEach((element) => {
-      element.addEventListener('click', () => {
-        copyToClipboard(element.textContent)
-        element.classList.add('copied')
+  &:before {
+    content: '';
+    position: absolute;
+    left: -0.5rem;
+    top: -0.5rem;
+    width: calc(100% + 1rem);
+    height: calc(100% + 1rem);
+    border-radius: ${(props) => props.theme.borderRadius};
+    background-image: ${(props) => props.theme.gradient};
+  }
+`
 
-        setTimeout(() => {
-          element.classList.remove('copied')
-        }, 2000)
-      })
-    })
-  }, [])
+const VideoPlayer = styled(Player)`
+  position: absolute;
+  top: 0;
+  left: 0;
+`
+
+const Lesson = ({ lesson }) => {
+  const [videoIsReady, setVideoIsReady] = useState(false)
+
+  const breadcrumbTitle = lesson.isPartOfSeries
+    ? lesson.seriesTitle
+    : 'All Videos'
+  const breadcrumbSlug = lesson.isPartOfSeries
+    ? `/video-series/${lesson.seriesSlug}`
+    : '/videos'
+
+  const handleFade = () => {
+    setVideoIsReady(true)
+  }
 
   return (
     <Container>
-      <Title>{article.title}</Title>
-      <SEO title={article.title} description={article.description} />
-      {article.isPartOfSeries ? (
-        <TableOfContents
-          series={article.articlesInSeries}
-          title={breadcrumbTitle}
-          slug={breadcrumbSlug}
+      <SEO title={lesson.title} description={lesson.description} />
+      <Breadcrumbs title={breadcrumbTitle} slug={breadcrumbSlug} />
+      <Title>{lesson.title}</Title>
+      <VideoContainer videoIsReady={videoIsReady}>
+        <VideoPlayer
+          width="100%"
+          height="100%"
+          url={lesson.videoUrl}
+          controls={true}
+          onReady={handleFade}
         />
-      ) : (
-        <Breadcrumbs title={breadcrumbTitle} slug={breadcrumbSlug} />
-      )}
-      <Body html={article.html} />
+      </VideoContainer>
+      <Body html={lesson.html} />
     </Container>
   )
 }
@@ -64,7 +83,7 @@ export const getStaticPaths = async () => {
     auth: process.env.NOTION_SECRET,
   })
 
-  let articles = []
+  let videos = []
   let data = {}
 
   do {
@@ -75,13 +94,13 @@ export const getStaticPaths = async () => {
           {
             property: 'Category',
             select: {
-              equals: 'Article',
+              equals: 'Video',
             },
           },
           {
             property: 'Category',
             select: {
-              equals: 'Series Article',
+              equals: 'Series Video',
             },
           },
         ],
@@ -89,13 +108,13 @@ export const getStaticPaths = async () => {
       start_cursor: data?.next_cursor,
     })
 
-    articles = [...articles, ...data.results]
+    videos = [...videos, ...data.results]
   } while (data?.has_more)
 
-  const paths = articles
+  const paths = videos
     // need to manually filter for `Published` because we can't
     // combine an `and` and an `or` in query
-    .filter((article) => article.properties.status === 'Published')
+    .filter((video) => video.properties.status === 'Published')
     .map((result) => ({
       params: {
         slug: slugify(result.properties.Name.title[0].plain_text),
@@ -113,7 +132,7 @@ export const getStaticProps = async ({ params: { slug } }) => {
     auth: process.env.NOTION_SECRET,
   })
 
-  let articles = []
+  let videos = []
   let data = {}
 
   do {
@@ -124,13 +143,13 @@ export const getStaticProps = async ({ params: { slug } }) => {
           {
             property: 'Category',
             select: {
-              equals: 'Article',
+              equals: 'Video',
             },
           },
           {
             property: 'Category',
             select: {
-              equals: 'Series Article',
+              equals: 'Series Video',
             },
           },
         ],
@@ -138,29 +157,29 @@ export const getStaticProps = async ({ params: { slug } }) => {
       start_cursor: data?.next_cursor,
     })
 
-    articles = [...articles, ...data.results]
+    videos = [...videos, ...data.results]
   } while (data?.has_more)
 
-  const pageMetaData = articles.find(
-    (article) => slugify(article.properties.Name.title[0].plain_text) === slug
+  const pageMetaData = videos.find(
+    (video) => slugify(video.properties.Name.title[0].plain_text) === slug
   )
 
-  data = {}
+  let blockData = {}
   let blockResults = []
 
   do {
-    data = await notion.blocks.children.list({
+    blockData = await notion.blocks.children.list({
       block_id: pageMetaData.id,
-      start_cursor: data?.next_cursor,
+      start_cursor: blockData?.next_cursor,
     })
-    blockResults = [...blockResults, ...data.results]
-  } while (data?.has_more)
+    blockResults = [...blockResults, ...blockData.results]
+  } while (blockData?.has_more)
 
-  let articleData = {}
+  let videoData = {}
 
-  if (pageMetaData.properties.Category.select.name === 'Series Article') {
+  if (pageMetaData.properties.Category.select.name === 'Series Video') {
+    let videosInSeries = []
     data = {}
-    let articlesInSeries = []
 
     do {
       data = await notion.databases.query({
@@ -170,7 +189,7 @@ export const getStaticProps = async ({ params: { slug } }) => {
             {
               property: 'Category',
               select: {
-                equals: 'Series Article',
+                equals: 'Series Video',
               },
             },
             {
@@ -194,14 +213,13 @@ export const getStaticProps = async ({ params: { slug } }) => {
           },
         ],
       })
-
-      articlesInSeries = [...articlesInSeries, ...data.results]
+      videosInSeries = [...videosInSeries, ...data.results]
     } while (data?.has_more)
 
-    articlesInSeries = articlesInSeries.map((article) => ({
-      title: article.properties.Name.title[0].plain_text,
-      positionInSeries: article.properties['Position in Series'].number,
-      slug: slugify(article.properties.Name.title[0].plain_text),
+    videosInSeries = videosInSeries.map((video) => ({
+      title: video.properties.Name.title[0].plain_text,
+      positionInSeries: video.properties['Position in Series'].number,
+      slug: slugify(video.properties.Name.title[0].plain_text),
     }))
 
     const series = await notion.pages.retrieve({
@@ -210,42 +228,28 @@ export const getStaticProps = async ({ params: { slug } }) => {
 
     const seriesTitle = series.properties.Name.title[0].plain_text
 
-    articleData = {
+    videoData = {
       isPartOfSeries: true,
       seriesTitle,
       seriesSlug: slugify(seriesTitle),
-      articlesInSeries,
+      videosInSeries,
     }
   }
 
-  const blocks = blockResults.map((block) => {
-    // Replace h1 with h2 - only the title should be h1 on the page
-    if (block.type === 'heading_1') {
-      const { heading_1, ...restOfBlock } = block
-
-      return {
-        ...restOfBlock,
-        type: 'heading_2',
-        heading_2: block.heading_1,
-      }
-    }
-
-    return block
-  })
-
-  const article = {
+  const lesson = {
     title: pageMetaData.properties.Name.title[0].plain_text,
     description: pageMetaData.properties.Description.rich_text[0].plain_text,
-    html: NotionBlocksHtmlParser.getInstance().parse(blocks),
-    ...articleData,
+    html: NotionBlocksHtmlParser.getInstance().parse(blockResults),
+    videoUrl: pageMetaData.properties['Link'].url,
+    ...videoData,
   }
 
   return {
     props: {
-      article,
+      lesson,
     },
     revalidate: 60,
   }
 }
 
-export default Article
+export default Lesson
