@@ -8,6 +8,10 @@ const globalStyles = createGlobalStyle`
   a, a:visited {
     color: inherit;
   }
+
+  html {
+    background: ${(props) => props.theme.background};
+  }
 `
 
 export default globalStyles

@@ -33,10 +33,10 @@ const Main = styled.main`
 const MyApp = ({ Component, pageProps }) => {
   return (
     <>
-      <Normalize />
-      <GlobalStyles />
       <DarkModeProvider>
         <ThemeProvider>
+          <Normalize />
+          <GlobalStyles />
           <Container
             lightBackground={lightTheme.background}
             darkBackground={darkTheme.background}
