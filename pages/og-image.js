@@ -82,7 +82,7 @@ const GenerateOg = () => {
           <Post min={24}>{title}</Post>
           <Twitter>
             <TwitterIcon />
-            _dijonmusters
+            jonmeyers_io
           </Twitter>
         </Title>
         <Dijon>

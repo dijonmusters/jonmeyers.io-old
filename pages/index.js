@@ -161,7 +161,7 @@ const HomePage = () => {
                 .
               </Subtitle>
               <Socials>
-                <Icon href="https://twitter.com/_dijonmusters">
+                <Icon href="https://twitter.com/jonmeyers_io">
                   <FaTwitter />
                 </Icon>
                 <Icon href="https://www.youtube.com/channel/UCPitAIwktfCfcMR4kDWebDQ">
