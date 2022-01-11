@@ -65,15 +65,7 @@ const Button = styled.button`
   `}
 `
 
-const ExternalLink = styled.a`
-  margin-bottom: 2rem;
-`
-
-const Para = styled.p`
-  margin: 2rem;
-`
-
-const SaaSMailingListPage = () => {
+const Newsletter = () => {
   const [emailInput, setEmailInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isEmailValid, setIsEmailValid] = useState(false)
@@ -102,16 +94,12 @@ const SaaSMailingListPage = () => {
   return (
     <>
       <SEO
-        title="Subscribe for SaaS course on egghead"
-        description="Subscribe to the new egghead course building a SaaS product using Next.js, Supabase and Stripe."
+        title="Subscribe for the newsletter"
+        description="Subscribe to my newsletter to hear about new stuff!"
       />
       <Container>
         <Form onSubmit={handleSubmit}>
-          <Title>The course is already live! 🎉</Title>
-          <ExternalLink href="https://egghead.io/courses/build-a-saas-product-with-next-js-supabase-and-stripe-61f2bc20">
-            Check it out on egghead.io 🥚
-          </ExternalLink>
-          <Para>To hear about new stuff sign up for my newsletter 👇</Para>
+          <Title>Hear about new stuff 👇</Title>
           <InputWrapper>
             <Input
               type="email"
@@ -129,4 +117,4 @@ const SaaSMailingListPage = () => {
   )
 }
 
-export default SaaSMailingListPage
+export default Newsletter

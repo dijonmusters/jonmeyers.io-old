@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const handler = async (req, res) => {
   const { email } = req.body
-  const url = `${process.env.CONVERTKIT_API_URL}/forms/${process.env.SAAS_FORM_ID}/subscribe`
+  const url = `${process.env.CONVERTKIT_API_URL}/forms/${process.env.NEWSLETTER_FORM_ID}/subscribe`
 
   try {
     await axios.post(url, {
@@ -10,9 +10,7 @@ const handler = async (req, res) => {
       api_key: process.env.CONVERTKIT_API_KEY,
     })
 
-    res.send(
-      "I've sent you an email 📧 Go confirm to hear about my egghead course!"
-    )
+    res.send("I've sent you an email 📧 Go confirm to hear about new stuff!")
   } catch (e) {
     console.log(e)
     res.send(e.message)
