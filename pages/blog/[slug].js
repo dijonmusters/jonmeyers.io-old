@@ -11,6 +11,7 @@ import { useEffect } from 'react'
 import { copyToClipboard } from 'utils/copyToClipboard'
 import TableOfContents from 'components/TableOfContents'
 import Body from 'components/Body'
+import supabase from 'utils/supabase'
 
 const Title = styled.h1`
   margin: 3rem 0;
@@ -60,47 +61,18 @@ const Article = ({ article }) => {
 }
 
 export const getStaticPaths = async () => {
-  const notion = new Client({
-    auth: process.env.NOTION_SECRET,
-  })
+  const { data: articles, error } = await supabase
+    .from('content')
+    .select('slug')
+    .in('category', ['Article', 'Series Article'])
 
-  let articles = []
-  let data = {}
+  if (error) {
+    console.log(error.message)
+  }
 
-  do {
-    data = await notion.databases.query({
-      database_id: process.env.ARTICLES_DATABASE_ID,
-      filter: {
-        or: [
-          {
-            property: 'Category',
-            select: {
-              equals: 'Article',
-            },
-          },
-          {
-            property: 'Category',
-            select: {
-              equals: 'Series Article',
-            },
-          },
-        ],
-      },
-      start_cursor: data?.next_cursor,
-    })
-
-    articles = [...articles, ...data.results]
-  } while (data?.has_more)
-
-  const paths = articles
-    // need to manually filter for `Published` because we can't
-    // combine an `and` and an `or` in query
-    .filter((article) => article.properties.status === 'Published')
-    .map((result) => ({
-      params: {
-        slug: slugify(result.properties.Name.title[0].plain_text),
-      },
-    }))
+  const paths = articles.map(({ slug }) => ({
+    params: { slug },
+  }))
 
   return {
     paths,

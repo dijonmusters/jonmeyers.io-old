@@ -41,6 +41,10 @@ const BlogList = ({ articles }) => (
 )
 
 export const getStaticProps = async () => {
+  // const individualArticles = await supabase.from('content').select('*').match({category: 'Article'})
+  // const externalArticles = await supabase.from('content').select('*').match({category: 'Article Link'})
+  // const seriesArticles = await supabase.from('series').select('*, articles(*)').match({category: 'Article'})
+
   const notion = new Client({
     auth: process.env.NOTION_SECRET,
   })
