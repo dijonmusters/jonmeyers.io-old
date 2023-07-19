@@ -94,8 +94,8 @@ const MailingList = () => {
   return (
     <>
       <SEO
-        title="Subscribe to mailing list"
-        description="Subscribe to my mailing list to hear about new stuff!"
+        title="Join my mailing list"
+        description="Join my mailing list to hear about new stuff!"
       />
       <Container>
         <Form onSubmit={handleSubmit}>

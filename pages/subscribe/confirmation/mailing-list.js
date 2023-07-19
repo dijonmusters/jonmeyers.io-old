@@ -34,11 +34,11 @@ const ConfirmationMailingList = () => {
   return (
     <>
       <SEO
-        title="Subscribed to mailing list"
-        description="You have subscribed to the mailing list. I will let you know when new stuff comes out!"
+        title="Joined the mailing list"
+        description="You have joined the mailing list. I will let you know when new stuff comes out!"
       />
       <Page>
-        <Title>Thanks for signing up!</Title>
+        <Title>Thanks for joining the mailing list!</Title>
         <Text>I will let you know when new stuff comes out!</Text>
       </Page>
     </>
