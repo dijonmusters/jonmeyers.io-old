@@ -1,0 +1,88 @@
+---
+title: Use On-conflict to Upsert in PostgreSQL
+og_title: Use On-conflict to Upsert in PostgreSQL
+description: Upserting is a convenient way to combine inserting and updating into a single idempotent statement - one that can be run multiple times with the same outcome. PostgreSQL makes this very easy with an insert statement, by using  the on conflict condition.
+published_date: 2023-02-09
+tags:
+  - PostgreSQL
+---
+
+The `upsert` action is a combination of `insert` and `update`. It allows us to write idempotent statements — can be executed multiple times without breaking everything! — and improve the convenience and resilience of our code.
+
+Thankfully, PostgreSQL makes it super easy to turn any `insert` statement into an `upsert`, using the `on conflict` condition.
+
+Let 's create a new table for users:
+
+```sql
+create table if not exists users (
+  id uuid default uuid_generate_v4() primary key,
+  username text unique,
+  email text unique
+);
+```
+
+One important thing to note here, is that both `username` and `email` are `unique`. Your insert statement needs to include something that is unique, otherwise, Postgres will just keep creating new rows — not idempotent!
+
+So if we try to insert a new user:
+
+```sql
+insert into users(username, email)
+values('jon', 'jon@supabase.io');
+```
+
+No problem!
+
+But try to insert that user again, and we have a BIG problem!
+
+```sql
+insert into users(username, email)
+values('jon', 'jon@supabase.io');
+```
+
+> “Failed to run sql query: duplicate key value violates unique constraint "users_username_key”
+
+Damn!
+
+But, let 's say we wanted our users to be able to update their `email`, but not their `username`. We can tell Postgres “Yo, we got this” by saying if there is a conflict on `username`, just update the `email` field:
+
+```sql
+insert into users(username, email)
+values('jon', 'jon@supabase.com')
+on conflict(username)
+do update set email = excluded.email;
+```
+
+Now, rather than creating a new record (insert), we have updated the existing one! 🎉
+
+And if we run that same statement with a new `username`, but an `email` that exists we get our error! As expected! 👮‍♀️
+
+```sql
+insert into users(username, email)
+values('tyler', 'jon@supabase.com')
+on conflict(username)
+do update set email = excluded.email;
+```
+
+However, if we run it with a `username` and `email` that does not yet exist:
+
+```sql
+insert into users(username, email)
+values('tyler', 'tyler@supabase.com')
+on conflict(username)
+do update set email = excluded.email;
+```
+
+It will just insert a new row, as per usual! 🧠
+
+Additionally, if you 're using [Supabase](https://app.supabase.com), you don 't even need to worry about it! `supabase-js` supports `upsert` statements directly!
+
+```jsx
+const { data } = await supabase
+  .from("users")
+  .upsert(
+    { username: "thor", email: "thor@supabase.com" },
+    { onConflict: "username" }
+  );
+```
+
+If you enjoyed this article, let me know about it on [Twitter](https://twitter.com/jonmeyers_io)! 🐦

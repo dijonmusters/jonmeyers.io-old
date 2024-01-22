@@ -1,0 +1,291 @@
+---
+title: Authentication with Auth0 and Next.js
+og_title: Authentication with Auth0 and Next.js
+description: This week we learn about authentication and how awesome Auth0 is! We use their nextjs-auth0 library to wrap our Next.js application, which gives us access to some really nice auth helper functions. This really helps to abstract away the complexity of authentication, and let's us focus on building a really good product - what our users are paying us for!
+published_date: 2021-04-28
+tags:
+  - Next.js
+---
+
+import ToC from "../../../components/ToC.astro";
+
+<ToC
+  title="Build a SaaS Platform with Next.js, Prisma, Auth0 and Stripe (series)"
+  list={[
+    {
+      title: "Tech stack and initial project setup",
+      url: "/blog/tech-stack-and-initial-project-setup",
+    },
+    {
+      title:
+        "Hosting on Vercel, automatic deploys with GitHub and configuring custom domains",
+      url: "/blog/hosting-on-vercel-automatic-deploys-with-github-and-configuring-custom-domains",
+    },
+    {
+      title: "Authentication with Auth0 and Next.js",
+      url: "/blog/authentication-with-auth0-and-next-js",
+      isCurrent: true,
+    },
+    {
+      title: "Social login with GitHub and Auth0 rules",
+      url: "/blog/social-login-with-github-and-auth0-rules",
+    },
+    {
+      title: "Processing payments with Stripe and webhooks",
+      url: "/blog/processing-payments-with-stripe-and-webhooks",
+    },
+    {
+      title: "Implementing subscriptions with Stripe",
+      url: "/blog/implementing-subscriptions-with-stripe",
+    },
+  ]}
+/>
+
+[Project repo](https://github.com/dijonmusters/courses)
+
+This week was all about users and authentication! The point of our SaaS project is to offer courses that can be purchased individually, or a recurring subscription that unlocks access to everything. In order to accomplish this we need to know some things about the user!
+
+## Auth0
+
+Given my limited experience with complex auth solutions, I wanted to lean on a third-party service as much as possible. Ideally I want all that complexity abstracted away so I can focus on building really good content - the product I am actually selling!
+
+One of the big benefits of Next.js, over something like Gatsby or a custom React application, is that we have access to a server at runtime. This means we can validate who the user is and what they should see - something we can't really trust on the client.
+
+There are numerous auth options compatible with Next.js, varying greatly in amount of code you need to write. My key requirements were:
+
+- Social login - GitHub
+- No need to write session cookie logic
+- Convenient functions to lock down pages and API routes
+
+Essentially I just want to be able to ask a library "should I show the thing?" and it give me an answer I can trust!
+
+Auth0 have done just that with an amazing library specifically for Next.js - very creatively called nextjs-auth0. This allows you to use the power of Auth0 to manage account creation, logging in and out, session cookies etc, and provides a simple set of functions that you can use to created gated content.
+
+First thing we need to do is create a free auth0 account and a tenant, which can be used to group together applications that share a user database. Here is a good guide to get this setup.
+
+Next we need to install and configure @auth0/nextjs-auth0 in our project. The README steps through exactly what we need to do to accomplish this!
+
+> Remember to follow the same steps from [Hosting on Vercel, automatic deploys with GitHub and configuring custom domains](https://jonmeyers.io/blog/build-a-saas-platform-with-stripe/hosting-on-vercel-automatic-deploys-with-github-and-configuring-custom-domains) to add all those Auth0 environment variables to Vercel - without this our hosted application will not work.
+
+This gives us access to some super awesome helper functions, my favourite of which are:
+
+## withPageAuthRequired
+
+This is a client-side function that we can use to wrap protected pages that we only want the user to be able to visit if they have logged in. If they are not logged in they will be redirected to the auth0 sign in page. Simply wrap the page-level component in this function like so.
+
+```jsx
+// pages/dashboard.js
+
+import { withPageAuthRequired } from "@auth0/nextjs-auth0";
+
+const Dashboard = withPageAuthRequired(({ user }) => {
+  return <p>Welcome {user.name}</p>;
+});
+
+export default Dashboard;
+```
+
+## useUser
+
+This is a client-side React Hook we can use to get the user object anywhere in any of our components.
+
+```jsx
+// pages/index.js
+
+import { useUser } from "@auth0/nextjs-auth0";
+
+const Home = () => {
+  const { user, error, isLoading } = useUser();
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>{error.message}</div>;
+
+  if (user) {
+    return (
+      <div>
+        Welcome {user.name}! <a href="/api/auth/logout">Logout</a>
+      </div>
+    );
+  }
+
+  return <a href="/api/auth/login">Login</a>;
+};
+
+export default Home;
+```
+
+## withPageAuthRequired
+
+This is a serverside function that we can wrap around Next.js' getServerSideProps to ensure the user cannot visit a page unless logged in.
+
+```jsx
+// pages/dashboard.js
+
+import { withPageAuthRequired } from "@auth0/nextjs-auth0";
+
+const Dashboard = ({ user }) => {
+  return <div>Hello {user.name}</div>;
+};
+
+export const getServerSideProps = withPageAuthRequired();
+
+export default Dashboard;
+```
+
+## withApiAuthRequired
+
+This is a serverside function that we can wrap around our API route to ensure that only an authenticated user can send a request to it.
+
+```jsx
+// pages/api/courses.js
+
+import { withApiAuthRequired, getSession } from "@auth0/nextjs-auth0";
+
+module.exports = withApiAuthRequired(async (req, res) => {
+  const { user } = getSession(req, res);
+
+  // validate user can view courses
+
+  res.send(courses);
+});
+```
+
+## User Schema
+
+Auth0 is fantastic for logging a user in and validating that their session is valid, however, if we want to keep a track of other information - such as courses purchased - we will need to create a user in our Prisma db.
+
+Let's extend our schema by adding a user model.
+
+```jsx
+// prisma/schema.prisma
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  courses      Course[]
+  createdAt    DateTime      @default(now())
+}
+```
+
+We will use the email from Auth0 to determine who our user is, therefore, it will need to be unique.
+
+We will also add a list of users to each course.
+
+```jsx
+// prisma/schema.prisma
+
+model Course {
+  id        Int      @id @default(autoincrement())
+  title     String   @unique
+  description     String
+  lessons   Lesson[]
+  users     User[]
+  createdAt DateTime @default(now())
+}
+```
+
+Next we're going to use Prisma's migration API to capture the changes to the structure of our database.
+
+```bash
+npx prisma migrate dev --name create-user-schema --preview-feature
+```
+
+> This is creating a new migration with the name "create-user-schema" and we need to append "--preview-feature" as this is still experimental.
+
+This may prompt you with some questions about overwriting existing data. Select YES.
+
+If it cannot apply the migration you can try resetting your database - this will drop the entire db so make sure you don't run it without thinking later!
+
+```bash
+npx prisma migrate reset --preview-feature
+```
+
+Next let's add a price and URL slug to our course schema.
+
+```jsx
+// prisma/schema.prisma
+
+model Course {
+  id        Int      @id @default(autoincrement())
+  title     String   @unique
+  description     String
+  lessons   Lesson[]
+  users     User[]
+  price     Int
+  slug      String  @unique
+  createdAt DateTime @default(now())
+}
+```
+
+And a slug to our Lesson schema.
+
+```jsx
+// prisma/schema.prisma
+
+model Lesson {
+  id        Int      @id @default(autoincrement())
+  title     String   @unique
+  description     String
+  courseId  Int
+  course    Course   @relation(fields: [courseId], references: [id])
+  videoUrl  String
+  slug      String  @unique
+  createdAt DateTime @default(now())
+}
+```
+
+The whole file should look something like this.
+
+```jsx
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  courses      Course[]
+  createdAt    DateTime      @default(now())
+}
+
+model Course {
+  id        Int      @id @default(autoincrement())
+  title     String   @unique
+  description     String
+  lessons   Lesson[]
+  users     User[]
+  price     Int
+  slug      String  @unique
+  createdAt DateTime @default(now())
+}
+
+model Lesson {
+  id        Int      @id @default(autoincrement())
+  title     String   @unique
+  description     String
+  courseId  Int
+  course    Course   @relation(fields: [courseId], references: [id])
+  videoUrl  String
+  slug      String  @unique
+  createdAt DateTime @default(now())
+}
+```
+
+Let's run the migration command again to snapshot those changes and update our db.
+
+```bash
+npx prisma migrate dev --name add-slugs --preview-feature
+```
+
+Awesome! We now have our application authenticating with Auth0, protecting our protected stuff and have our database schema ready to go!
+
+## Next week
+
+[Social login with GitHub and Auth0 rules](https://jonmeyers.io/blog/build-a-saas-platform-with-stripe/social-login-with-github-and-auth0-rules)

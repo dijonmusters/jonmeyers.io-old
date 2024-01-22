@@ -1,0 +1,90 @@
+---
+title: Call Remix loaders on demand with useRevalidate
+og_title: Call Remix loaders on demand with useRevalidate
+description: Remix loaders are functions that run server-side to fetch data before rendering a route. As of v1.10.0 the useRevalidator hook can be used to programatically call loader functions for all active routes.
+published_date: 2023-01-17
+tags:
+  - Auth
+  - Remix
+---
+
+Remix loaders are functions that run server-side to fetch data before rendering a route. This is a super convenient way to do server-ish things that the client can't be trusted with — auth, connecting to a db etc.
+
+```jsx
+export const loader = async () => {
+  const { data } = await supabase.from("posts").select();
+  return { data };
+};
+```
+
+We can then access this data in our component with the `useLoaderData` hook.
+
+```jsx
+export default function Index() {
+  const { data } = useLoaderData();
+  return <pre>{JSON.strinigfy(data, null, 2)}</pre>;
+}
+```
+
+This works perfectly for the first load of the page, and ensures that the data is available for the first SSR render, but there hasn't really been an easy way to programatically call these loaders when something happens client-side — signing in with Supabase, for example.
+
+**Until now!**
+
+As of [version 1.10.0](https://github.com/remix-run/remix/releases/tag/remix%401.10.0), Remix exposes a new `useRevalidate` hook which does exactly this.
+
+```jsx
+import { useRevalidator } from "@remix-run/react";
+
+export default function Index() {
+  const revalidator = useRevalidator();
+
+  const handleLoad = () => {
+    revalidator.revalidate();
+  };
+
+  return <button onClick={handleLoad}>Load</button>;
+}
+```
+
+The cool thing is, this doesn't just revalidate the data for this Index component, but any route that is currently active — this could be several with [nested routing](https://remix.run/docs/en/v1/guides/routing#what-is-nested-routing).
+
+So why would we actually want to do this? With the example above, the user could just click the browser's refresh button 🧠
+
+Well, Supabase Auth takes place client-side, meaning Remix has no idea the state of the user has changed. Without calling the loaders again, we have the stale, unauthenticated version of the data from Supabase. Therefore, when our user signs in, we need to tell Remix to call those loaders again so we can have that fresh, authenticated Supabase data 🥦
+
+Thankfully, Supabase exposes an `onAuthStateChange` hook, which takes a callback function to invoke any time the state of the user changes. We can combine these two concepts to tell Remix to revalidate data any time the state of our user changes.
+
+```jsx
+const revalidator = useRevalidator();
+
+supabase.auth.onAuthStateChange(() => {
+  revalidator.revalidate();
+});
+```
+
+And including all the `useEffect` and clean-up stuff.
+
+```jsx
+const revalidator = useRevalidator();
+
+useEffect(() => {
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange(() => {
+    revalidator.revalidate();
+  });
+
+  return () => {
+    subscription.unsubscribe();
+  };
+}, [supabase, revalidator]);
+```
+
+If you want to go much deeper into building a realtime app with Remix and Supabase, check out my [brand new, entirely free egghead course](https://egghead.io/courses/build-a-realtime-chat-app-with-remix-and-supabase-d36e2618?af=9qsk0a). We cover:
+
+- authenticating using GitHub OAuth
+- managing auth sessions with cookies to fetch data server-side
+- generating TypeScript definitions with the Supabase CLI
+- Implementing Row Level Security Policies for authorization
+
+Thanks for reading! 👋

@@ -1,0 +1,178 @@
+---
+title: Create a simple cookie with Remix
+og_title: Create a simple cookie with Remix
+description: Cookies allow state to be shared between the browser and server. In this article, we look at creating a simple cookie with Remix to display different messages based on whether the user has visited the page before.
+published_date: 2022-07-06
+tags:
+  - Remix
+---
+
+Cookies are a way for us to share state between the browser and the server. They are commonly used to implement auth, or determine whether the user should see a particular piece of UI — such as a cookie banner. We are going to look at a bunch of practical uses for cookies over this series, but for now, let's break down how to create a simple cookie in Remix.
+
+## Remix
+
+Remix is an awesome “new” web framework that reduces the cognitive gap between the client (browser) and server bits of our application. They do this by providing excellent primitives and helper functions — like `createCookie` for dealing with cookies! 🍪
+
+Let's start by creating a new Remix application.
+
+```bash
+npx create-remix cookies-in-remix
+```
+
+This will step through a collection of questions. Here is what I selected:
+
+- Just the basics
+- Remix App Server
+- TypeScript
+
+Navigate to `app/routes/index.tsx` and update with the following:
+
+```jsx
+import { json } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
+
+export const loader = () => {
+  return json({ message: "hello" });
+};
+
+const Index = () => {
+  const data = useLoaderData();
+  return <pre>{JSON.stringify(data, null, 2)}</pre>;
+};
+
+export default Index;
+```
+
+A few things to mention here:
+
+1. The `loader` function runs on the server before our page is rendered
+2. The `json` helper automatically stringifies our response and sets the correct headers
+3. `useLoaderData` gives us access to whatever was returned from the `loader` function
+4. A `<pre>` tag with `JSON.stringify(data, null, 2)` will pretty print the data — great for testing!
+
+This should display something like this:
+
+```json
+{
+  "message": "hello"
+}
+```
+
+So what if we wanted to display different messages for those who were new to our site, verses those who had visited before?
+
+We can use a cookie for that! 😋
+
+As mentioned earlier, Remix has a super simple helper function for creating simple cookies — `createCookie`.
+
+> We will look at creating session cookies to store additional data in a future article.
+
+Let's create a new file at `app/utils/cookies.tsx` and populate with the following:
+
+```jsx
+import { createCookie } from "@remix-run/node"; // or "@remix-run/cloudflare"
+
+export const hasUserVisited = createCookie("has-user-visited");
+```
+
+As the name suggests, this cookie will tell us whether the user has visited our app before. Let's import it into our `app/routes/index.tsx` page.
+
+```jsx
+import { json } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
+import { hasUserVisited } from "~/utils/cookies";
+
+export const loader = async () => {
+  // if cookie is present, send welcome back message
+  // otherwise, send first time message
+};
+
+const Index = () => {
+  const data = useLoaderData();
+  return <pre>{JSON.stringify(data, null, 2)}</pre>;
+};
+
+export default Index;
+```
+
+We can check the `headers` that come along with the `request` to see if the cookie is present. Based on this, we can customize the message we send back.
+
+```jsx
+import { json } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
+import { hasUserVisited } from "~/utils/cookies";
+
+export const loader = async ({ request }: { request: Request }) => {
+  const cookieHeader = request.headers.get("Cookie");
+  const hasUserVisitedPage = await hasUserVisited.parse(cookieHeader);
+
+  const message = hasUserVisitedPage
+    ? "Hey, I know you! Welcome back!"
+    : "Hello, I haven't met you before";
+
+  return json({ message });
+};
+
+const Index = () => {
+  const data = useLoaderData();
+  return <pre>{JSON.stringify(data, null, 2)}</pre>;
+};
+
+export default Index;
+```
+
+We should now see this message the first time we visit the page!
+
+```json
+{
+  "message": "Hello, I haven't met you before"
+}
+```
+
+But wait, we are seeing this message every time! 😡
+
+This is because we are never actually setting the cookie. Let's update our loader to use the `Set-Cookie` header.
+
+```jsx
+import { json } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
+import { hasUserVisited } from "~/utils/cookies";
+
+export const loader = async ({ request }: { request: Request }) => {
+  const cookieHeader = request.headers.get("Cookie");
+  const hasUserVisitedPage = await hasUserVisited.parse(cookieHeader);
+
+  const message = hasUserVisitedPage
+    ? "Hey, I know you! Welcome back!"
+    : "Hello, I haven't met you before";
+
+  if (hasUserVisitedPage) {
+    return json({ message });
+  }
+
+  return json(
+    { message },
+    {
+      headers: {
+        "Set-Cookie": await hasUserVisited.serialize({}),
+      },
+    }
+  );
+};
+
+const Index = () => {
+  const data = useLoaderData();
+  return <pre>{JSON.stringify(data, null, 2)}</pre>;
+};
+
+export default Index;
+```
+
+Now we will see the `Hello, I haven't met you before` message the first time we visit the page, but after a refresh, will see the `Hey, I know you! Welcome back!` forever!
+
+> We can reset this by clearing cookies for `localhost:3000` in the browser's dev tools.
+
+And that's how we create simple cookies in Remix! 🎉
+
+In the [next article](https://jonmeyers.io/blog/store-data-in-a-cookie-with-sessions-and-remix), we look at storing additional session data in our cookie 🍪
+
+If you enjoyed this article, come [follow me on Twitter](https://twitter.com/jonmeyers_io)! 🐦

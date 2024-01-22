@@ -1,0 +1,85 @@
+---
+title: Fix client server hydration error in Next.js
+og_title: Fix client server hydration error in Next.js
+description: When conditionally rendering UI based on state that is only available in the browser,  we need to dynamically import the component, and tell Next.js this should only be rendered client-side (disable SSR).
+published_date: 2022-08-04
+tags:
+  - Next.js
+---
+
+import { Image } from "astro:assets";
+
+Often, we want to conditionally render a piece of UI based on whether a user is signed in or not — e.g. toggling between a Login or Logout button. When using Next.js, the initial render of the page happens on the server, and then “hydrates” on the client. If these two versions do not match, Next.js gives us a lovely, and quite intimidating, hydration warning in the console.
+
+import warning from "./warning.png";
+
+<Image src={warning} alt="React Hydration warning in console" />
+
+But, why wouldn't they match? 🤔
+
+Well, if you're using Supabase for auth then the user access token is stored in localStorage and automatically sent across with each query to Supabase. Unfortunately, the server does not have access to localStorage, therefore, for the first render of the page it thinks there is no user and renders the Login button.
+
+The app then hydrates on the client, which checks again whether we have a user, and this time we do because we have localStorage, therefore, we render the Logout button. Now the server version and the client version do not match, so Next.js displays the warning.
+
+How do we fix it? 💡
+
+Well, let's say you have a `<Navbar />` component that is dynamically displaying these buttons based on a user's signed in state — or any state that is only available in the browser.
+
+```jsx
+import Link from "next/link";
+import { useUser } from "../context/user";
+
+const Nav = () => {
+  const { user } = useUser();
+
+  return (
+    <nav>
+      <Link href={user ? "/logout" : "/login"}>
+        {user ? "Logout" : "Login"}
+      </Link>
+    </nav>
+  );
+};
+
+export default Nav;
+```
+
+And we are importing this component in `_app.js` so it displays on each page.
+
+```jsx
+import UserProvider from "../context/user";
+import Nav from "../components/nav";
+
+function MyApp({ Component, pageProps }) {
+  return (
+    <UserProvider>
+      <Nav />
+      <Component {...pageProps} />
+    </UserProvider>
+  );
+}
+
+export default MyApp;
+```
+
+The simple fix is to dynamically import the `Navbar` component in `_app.js`, and disable SSR.
+
+```jsx
+import UserProvider from "../context/user";
+import dynamic from "next/dynamic";
+
+const Nav = dynamic(() => import("../components/nav"), { ssr: false });
+
+function MyApp({ Component, pageProps }) {
+  return (
+    <UserProvider>
+      <Nav />
+      <Component {...pageProps} />
+    </UserProvider>
+  );
+}
+
+export default MyApp;
+```
+
+No more error! 🎉

@@ -1,0 +1,319 @@
+---
+title: How I built the back-end for Netlify's Matterday project with Supabase
+og_title: How I built the back-end for Netlify's Matterday project with Supabase
+description: By using Netlify and Supabase together you save a huge amount of dev time. In this article, Jon reflects on why Supabase was the right tool to build the Matterday project!
+published_date: 2022-06-17
+tags:
+  - Next.js
+  - PostgreSQL
+---
+
+import { Image } from "astro:assets";
+
+By using Netlify to deploy your application, you avoid a lot of headaches. Apparently, [an entire day a week](https://www.netlify.com/resources/ebooks/accelerate-digital-growth-with-netlify/?utm_campaign=website_launch_2022_05_rework_your_workweek&utm_content=matterday&_ga=2.206652496.2141506283.1655356019-1401737031.1652788610) of headaches. [Matterday](https://matterday.netlify.com) is your opportunity to reflect on what you could do with an extra day.
+
+import ogImage from "./og-image.jpeg";
+
+<Image
+  src={ogImage}
+  alt="OG Image for Matterday with text “what could you do with an extra day a week?”"
+/>
+
+To store all these great ideas, we need a database, and to stay on brand with picking tools that save you a significant amount of time, let's use [Supabase](https://supabase.com/)!
+
+## What is Supabase?
+
+Supabase is a “back-end as a service” service, which makes it Supa easy to create a hosted PostgreSQL database, and provides a collection of convenience functions around auth, realtime, file storage and edge functions.
+
+“That is a lot of powerful and fun tooling, but surely we don't need all of that to just store a single text field.” — Me, before starting the project.
+
+Basically, we want to build this 👇
+
+<Image
+  src={ogImage}
+  alt="OG image saying I would “play synthesizers” with my extra day a week"
+/>
+
+## Requirements
+
+1. A user can enter what they would do with their extra day into a text field
+2. A shareable image is generated for each “matter”, displaying the creator's username and avatar
+3. Giving people an open text field sounds risky — how about a moderation step?
+
+> Check out the final version of the Matterday code in [this GitHub repo](https://github.com/netlify/matterday.netlify.com).
+
+I also did a live stream building this Supabase back-end from scratch. Check it out [here](https://youtu.be/bl4k4IiYYAQ?t=1064)!
+
+## Schema
+
+This project has a very simple schema. It is just a single table:
+
+```sql
+create type status_options as enum ('new', 'approved', 'denied');
+
+create table if not exists matters (
+  id uuid default uuid_generate_v4() primary key,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  content text,
+  og_image text,
+  status status_options default 'new',
+  user_id uuid references auth.users default auth.uid() not null
+);
+```
+
+- `content` — what the user would do with their extra day.
+- `og_image` — URL for the sharable image hosted on Cloudinary.
+- `status` — used to moderate submissions. This is an enum type, which means its value can only be one of a finite list of options — listed above as `status_options`.
+- `user_id` — the user who created the “matter”. This column links to the `auth.users` table, which is automatically created, managed and populated by Supabase when new users sign in.
+
+So how do we actually sign users in?
+
+## Auth
+
+Supabase provides two auth strategies configured out of the box — email and password, and magic link (passwordless). This would work to sign our users in, but to generate their shareable image, we also need a username and avatar. Making the user fill out a form with multiple fields and an image upload before they even get to telling us what they would do with their extra day is just too much to ask — we're trying to save them time after all!
+
+Supabase also has the option for 3rd party auth with a collection of providers. Netlify's audience is pretty likely to be devs who have GitHub accounts, and GitHub already has a username and avatar. So let's just authenticate with GitHub and move on to the interesting stuff!
+
+Follow [this guide](https://supabase.com/docs/guides/auth/auth-github) to create a new OAuth app on GitHub and provide Supabase with the client ID and secret.
+
+Now in our application, we just tell Supabase to do the hard work:
+
+```jsx
+supabase.auth.signIn({
+  provider: "github",
+});
+```
+
+It's actually that easy! 👆
+
+Great! Our users don't need yet another password to use our app, and GitHub send across their username and avatar URL during the sign in process. Annoyingly, these are locked away in that special Supabase table — `auth.users` — which we can't query from our client application.
+
+> The `users` table is in the `auth` schema. The supabase-js client only has access to the `public` schema, which is where we create the tables for our application.
+
+Not a problem. There's a view for that!
+
+## Views
+
+Views are a very common tool in database design. They allow us to create a simple interface for reading or writing data across multiple tables and schemas. They are basically an alias for a complex query.
+
+This may look slightly scary but stick with me:
+
+```sql
+create or replace view matters_with_user as
+	select matters.*,
+		raw_user_meta_data->>'avatar_url' as avatar_url,
+		raw_user_meta_data->>'user_name' as username
+	from public.matters matters
+	left join auth.users users
+	on matters.user_id = users.id;
+```
+
+We are creating a view called `matters_with_user`, which, not so surprisingly, gives us back all the matters, with the user that created them.
+
+> `select matters.*` selects all of the columns from the matters table.
+
+> `raw_user_meta_data->>'avatar_url' as avatar_url` is pulling the `avatar_url` field out of the `raw_user_meta_data` column, and aliasing it to `avatar_url` to simplify the output.
+
+So basically, give me all the columns from the matters table, and just the `username` and `avatar_url` columns from `auth.users`.
+
+The cool thing is we never need to think about this scary SQL again, and this is now super simple to query in our app:
+
+```jsx
+supabase.from("matters_with_user").select("*");
+```
+
+Views can be treated the same way as tables in our database, so we can also apply filters to them.
+
+```jsx
+supabase.from("matters_with_user").select("*").match({ status: "approved" });
+```
+
+This will give us back only the matters which have been approved by the moderation team ✅
+
+> To learn more about views check out [this awesome article](https://supabase.com/blog/2020/11/18/postgresql-views) from [Paul Copplestone](https://twitter.com/kiwicopple).
+
+## Generating an image
+
+Due to their on-the-fly transformations and heavy caching, [Cloudinary](https://cloudinary.com/) is the obvious choice here. [Jason](https://twitter.com/jlengstorf/) has an awesome open source project called [get-share-image](https://github.com/jlengstorf/get-share-image), which does _almost_ exactly what we want. You simply call this function — in a [Supabase Edge Function](https://supabase.com/docs/guides/functions) for example — and pass it a config object containing your Cloudinary account, base image ID and text you want to overlay:
+
+```jsx
+import getShareImage from "@jlengstorf/get-share-image";
+
+const socialImage = getShareImage({
+  title: "Deploy a Node.js App to DigitalOcean with SSL",
+  tagline: "#devops #nodejs #ssl",
+  cloudName: "jlengstorf",
+  imagePublicID: "lwj/blog-post-card",
+  titleFont: "futura",
+  taglineFont: "futura",
+  textColor: "232129",
+});
+```
+
+`socialImage` is now set to a URL that gets you something like this:
+
+[Example OG Image from Learn with Jason](https://camo.githubusercontent.com/e1a879e962e43237b174f7078512187972f7f8d84ece9e253e1484de624c181d/68747470733a2f2f7265732e636c6f7564696e6172792e636f6d2f6a6c656e6773746f72662f696d6167652f75706c6f61642f775f313238302c685f3636392c635f66696c6c2c715f6175746f2c665f6175746f2f775f3736302c635f6669742c636f5f7267623a3233323132392c675f736f7574685f776573742c785f3438302c795f3235342c6c5f746578743a6675747572615f36343a4465706c6f79253230612532304e6f64652e6a73253230417070253230746f2532304469676974616c4f6365616e2532307769746825323053534c2f775f3736302c635f6669742c636f5f7267623a3233323132392c675f6e6f7274685f776573742c785f3438302c795f3434352c6c5f746578743a6675747572615f34383a2532336465766f70732532302532336e6f64656a7325323025323373736c2f6c776a2f626c6f672d706f73742d63617264)
+
+Example OG Image from Learn with Jason
+
+Tweaking this a bit would work for displaying our template image and overlaying the content of what the user would do with their extra day. We could even modify the `tagline` to use this for their GitHub username, but to display their avatar we would need to add another custom layer. This would require some deeper tweaking of the URL returned by the `getShareImage()` function.
+
+But wait, if this is just building up a URL — one big string — and we have all the content we need to overlay in our Supabase database, could we not just generate this ourselves when a new row is inserted?
+
+We sure can! 🚀
+
+## PostgreSQL Triggers
+
+Postgres Triggers allow us to subscribe to events that happen on a particular table — insert, update or delete — and automatically call a Postgres Function to generate the Cloudinary URL.
+
+Essentially, what we want to do is:
+
+1. Look up the GitHub `username` and `avatar` for the user inserting the new row
+
+   ```sql
+   select raw_user_meta_data->>'avatar_url', raw_user_meta_data->>'user_name'
+   into avatar_url, github_username
+   from auth.users
+   where id = new.user_id;
+   ```
+
+2. Generate a big, long, scary looking Cloudinary URL for `og_image` column
+
+   ```sql
+   og_image = concat(
+   	'https://res.cloudinary.com/netlify/image/upload/w_1280,h_669,c_fill,q_auto,f_auto/w_760,c_fit,co_rgb:ffffff,g_south_west/l_fetch:',
+   	avatar_url,
+   	'/w_65,h_65/r_max/fl_layer_apply,x_48,y_45,g_north_west/l_text:roboto_26:@',
+   	github_username,
+   	',co_rgb:9ce9db,g_north_west,x_128,y_66/l_text:caveat_68:',
+   	content,
+   	',co_rgb:ffffff,y_115/matter-day/og-template'
+   );
+   ```
+
+> Check out the [Cloudinary documentation for placing layers on images](https://cloudinary.com/documentation/layers).
+
+## Problems!! 😡
+
+The Cloudinary URL is very finicky and likes to break with very little feedback on what has gone wrong! Here are some hints in case you want to try something like this in the future.
+
+`l_fetch` makes a HTTP request to get some data — in our case, the user's avatar. This must be a base64 encoded version of the URL string to fetch. Thankfully, Postgres has our back here. There is a simple `encode` function that does what we need:
+
+```sql
+encode(avatar_url::bytea, 'base64')
+```
+
+Annoyingly, some avatar URLs contain a query parameter `?v=4`, which also breaks everything! We can easily replace this with a `regexp_replace`:
+
+```sql
+avatar_url = regexp_replace(avatar_url, '\?.*$', '', 'g');
+```
+
+> `\?.*$` just means from the `?` character to the end of the string. In other words, remove the `?` and anything after i
+
+`l_text` adds a text layer to the image and can be a string or URI encoded. Either of these work well, so long as people stay away from special characters that mean something within a URL, or to Cloudinary's token-based string — `?`, `/`, `,`, `.` etc.
+
+To get around this we need to first encode the content as a URI and then also escape these symbols. I couldn't find an easy way to do this in SQL, but this is JavaScript's bread and butter!
+
+```jsx
+escape(encodeURIComponent(content));
+```
+
+We can actually write PostgreSQL functions in [v8](https://v8.dev/) — Google's open source JavaScript engine — by enabling the Postgres extension:
+
+```sql
+create extension if not exists plv8;
+```
+
+Now we can write another PostgreSQL function to wrap our escaping, URI encoding logic from v8:
+
+```sql
+create or replace function escape_encode_uri(content text) returns text as $$
+  return escape(encodeURIComponent(content));
+$$ language plv8;
+```
+
+And now in our trigger function, we can simply call the `escape_encode_uri` function to safely transform the content:
+
+```sql
+escape_encode_uri(content)
+```
+
+## Solutions! 😇
+
+Now that we have all those pesky problems solved we can extract that image generating logic into its own PostgreSQL Function. Supabase has a nice UI around creating these, but for easy copy pasta, here is the final SQL statement to create the `generate_og_image` function:
+
+```sql
+create or replace function generate_og_image(avatar_url text, github_username text, content text)
+returns text as $$
+  begin
+    -- remove ? and query params
+    avatar_url = regexp_replace(avatar_url, '\?.*$', '', 'g');
+
+    return concat(
+      'https://res.cloudinary.com/netlify/image/upload/w_1280,h_669,c_fill,q_auto,f_auto/w_760,c_fit,co_rgb:ffffff,g_south_west/l_fetch:',
+      encode(avatar_url::bytea, 'base64'),
+      '/w_65,h_65/r_max/fl_layer_apply,x_48,y_45,g_north_west/l_text:roboto_26:@',
+      github_username,
+      ',co_rgb:9ce9db,g_north_west,x_128,y_66/l_text:caveat_68:',
+      escape_encode_uri(content),
+      ',co_rgb:ffffff,y_115/matter-day/og-template'
+    );
+  end;
+$$ language plpgsql security definer;
+```
+
+Let's now create the function which will be called anytime a new row is inserted into the `matters` table:
+
+```sql
+create or replace function handle_new_matter() returns trigger as $$
+  declare
+    avatar_url text;
+    github_username text;
+  begin
+		-- fetch username and avatar_url for user creating new matter
+    select raw_user_meta_data->>'avatar_url', raw_user_meta_data->>'user_name'
+    into avatar_url, github_username
+    from auth.users
+    where id = new.user_id;
+
+		-- generate OG image and update column value
+		new.og_image = generate_og_image(avatar_url, github_username, new.content);
+
+    return new;
+  end;
+$$ language plpgsql security definer;
+```
+
+A few things to clarify here:
+
+- To call this function from a trigger, the return type must be `trigger`.
+- `new` is a special variable that represents the new row being inserted into the `matters` table.
+- We must return `new` from a function that returns a trigger.
+- Security level must be set to `security definer` to bypass RLS.
+
+And now we just need to set up a trigger to call this function when a new row is inserted into the `matters` table:
+
+```sql
+create trigger on_matter_created
+before insert on public.matters
+for each row execute procedure public.handle_new_matter();
+```
+
+The database will now take care of all of that nonsense for us, keeping our UI code clean and simple:
+
+```jsx
+supabase.from("matters").insert({
+  content,
+});
+```
+
+And that's it!
+
+import spongebob from "./spongebob.gif";
+
+<Image src={spongebob} alt="Spongebob dusting his hands" />
+
+Check out [Lynn Fisher](https://twitter.com/lynnandtonic)'s [amazing write-up](https://www.netlify.com/blog/fun-parallax-scrolling-css-for-matterday/) on how she implemented the parallax scrolling effect on the [Matterday landing page](https://matterday.netlify.com/) 💯
+
+👋 Thanks for reading and come [follow me on Twitter](https://twitter.com/jonmeyers_io)!

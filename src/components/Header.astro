@@ -1,0 +1,17 @@
+---
+import HeaderLink from "./HeaderLink.astro";
+import { SITE_TITLE } from "../consts";
+---
+
+<header class="border-b border-b-gray-800">
+  <nav class="flex p-4 w-full max-w-[65ch] mx-auto items-center">
+    <h2 class="font-bold">
+      <a href="/" class="flex items-center"
+        ><img src="/dijon-small.png" width={30} class="mr-2" />{SITE_TITLE}</a
+      >
+    </h2>
+    <HeaderLink href="/blog" class="ml-3">Blog</HeaderLink>
+    <HeaderLink href="/courses" class="ml-3">Courses</HeaderLink>
+    <!-- <HeaderLink href="/newsletter" class="ml-3">Newsletter</HeaderLink> -->
+  </nav>
+</header>

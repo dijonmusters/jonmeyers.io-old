@@ -1,0 +1,63 @@
+<button
+  class="copy-snippet absolute top-2 right-2 hover:bg-gray-800 p-2 rounded-md"
+>
+  <svg
+    id="tick"
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="hidden"
+  >
+    <polyline points="20 6 9 17 4 12"></polyline>
+  </svg>
+  <svg
+    id="copy"
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+  </svg>
+</button>
+
+<script>
+  const buttons = document.querySelectorAll("button.copy-snippet");
+
+  buttons.forEach((button) => {
+    let timeout: NodeJS.Timeout | null = null;
+
+    button.addEventListener("click", () => {
+      window.navigator.clipboard.writeText(
+        button.nextElementSibling?.textContent ?? ""
+      );
+
+      const tick = button.querySelector("#tick");
+      const copy = button.querySelector("#copy");
+
+      tick?.classList.remove("hidden");
+      copy?.classList.add("hidden");
+
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+
+      timeout = setTimeout(() => {
+        tick?.classList.add("hidden");
+        copy?.classList.remove("hidden");
+      }, 3000);
+    });
+  });
+</script>

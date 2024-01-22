@@ -1,0 +1,261 @@
+---
+title: Simple caching with local storage
+og_title: Simple caching with local storage
+description: We can massively improve the performance of our application for our users. All we need to do is stop requesting the same data over and over again, expecting our users to be entertained by a loading spinner instead of displaying them the content they are looking for! In this article we look at how easy it is to implement caching using localStorage so we can display that content faster and keep our users happy!
+published_date: 2020-03-03
+tags:
+  - React
+---
+
+import { Image } from "astro:assets";
+
+Computers are fast. Like, really fast! So why do we see so many loading spinners on the web and have to wait so long for things to load? Because networks are slow! Sending information across the world is slow and by using wonderful 3rd party services to solve our problems - Netlify, Stripe, AWS etc - our webapps could be making requests to several places around the world, before the user gets a chance to interact with the page.
+
+This is a complicated problem to solve and probably requires a lot of smart devops people and tech leads, or can we solve part of it in JS? Spoilers, we can!
+
+Let's say we have a request that is hitting a Tony Hawks Pro Skater API and requesting all skaters.
+
+> Note: I am using the axios library for simplicity's sake but this could definitely be done with fetch
+
+```jsx
+import axios from "axios";
+
+const getSkaters = async () => {
+  const url = "https://thps.now.sh/api/skaters";
+
+  // wait for a response from the API
+  const { data } = await axios.get(url);
+
+  return data;
+};
+```
+
+This returns a response that looks something like this.
+
+```jsx
+[
+  {
+    "name": "Tony Hawk",
+    "style": "Vert",
+    "stance": "Goofy",
+    "speed": 6,
+    "air": 7,
+    "hangtime": 5
+  },
+  {
+    "name": "Bob Burnquist",
+    "style": "All around",
+    "stance": "Regular",
+    "speed": 5,
+    "air": 6,
+    "hangtime": 5
+  },
+  ...
+]
+```
+
+Everytime we call the getSkaters() function we are waiting for our app to send a request to the Tony Hawk API. This could only take a matter of milliseconds in an ideal scenario - low API traffic, small dataset, our app and API hosted in similar geographic locations - but to address what I'm sure you're all thinking, there are surely millions of people all day every day that wanna hit that API non stop to get those sweet skater stats!
+
+Now we can't do much about the first request, as the client has no idea about player stats until our API tells them, however, we could implement our own way of caching that data the first time - making it available without a full round trip to the API server. Now how will we build a cache? A cache is just some data that we remember we got back from a particular request (or URL). Thankfully the browser has this wonderful and simple way to store data called localStorage.
+
+```jsx
+localStorage.setItem(key, data); // writes the data against that key
+
+localStorage.getItem(key); // returns the data associated with that key
+```
+
+LocalStorage allows us to read and write key/value pairs to and from the browser's storage. To write some data to localStorage we need a key - something unique to identify our data - and the data we want to store there. Let's build some convenience functions for interfacing with localStorage.
+
+```jsx
+// src/utils/cache.js
+
+const writeToCache = (url, data) =>
+  localStorage.setItem(url, JSON.stringify(data));
+
+const readFromCache = (url) => JSON.parse(localStorage.getItem(url)) || null;
+
+export { readFromCache, writeToCache };
+```
+
+Hopefully you are comfortable with the ES6 syntax, arrow functions and implicit returns used above. If not, these are two functions that abstract reading and writing from the cache. What is on the right-hand side of => is what is returned from the function.
+
+We are using the url as our key, as this will always be unique.
+
+There are a few other weird things going on here, particularly parse and stringify. These functions are the inverse of each other. One takes a json object and turns it into a big string (stringify), the other takes a big string and turns it into a json object (parse). This is required because localStorage only allows us to store strings.
+
+The || syntax is used to provide a fallback value. So we are checking whether there is any data stored against that url that we can parse into a json object, if not we want to return null.
+
+`export` is used to expose these functions from the file so that other files can import them.
+
+Next, we want to abstract our request out of our getSkaters() function and make it more generic, and cache-able.
+
+```jsx
+// src/utils/request.js
+
+import axios from "axios";
+import { writeToCache } from "./cache";
+
+const getFreshData = async (url, cacheResponse = false) => {
+  const { data } = await axios.get(url);
+  cacheResponse && writeToCache(url, data);
+  return data;
+};
+```
+
+Again, we are creating a new file to abstract away our reusable logic. Our getFreshData() function now takes a url and a cacheResponse boolean. The url is used to request our data from the API, and cacheResponse tells our function whether we want to write that response to the cache. Let's extend this file to contain a getCachedData() function.
+
+```jsx
+const getCachedData = (url) => readFromCache(url);
+```
+
+This one is really just wrapping readFromCache, but it means anything that needs to request data can just use this one file, reguardless of whether they want fresh or cached content. The final version of the file should look something like this.
+
+```jsx
+import axios from "axios";
+import { readFromCache, writeToCache } from "./cache";
+
+const getFreshData = async (url, cacheResponse = false) => {
+  const { data } = await axios.get(url);
+  cacheResponse && writeToCache(url, data);
+  return data;
+};
+
+const getCachedData = (url) => readFromCache(url);
+
+export { getCachedData, getFreshData };
+```
+
+Now let's create our Skaters component.
+
+```jsx
+import React, { useState } from "react";
+
+const renderSkater = ({ name, stance }) => (
+  <div key={name}>
+    <p>
+      {name} - {stance}
+    </p>
+  </div>
+);
+
+const Skaters = () => {
+  const [skaters, setSkaters] = useState([]);
+
+  return (
+    <>
+      <div>{skaters.map(renderSkater)}</div>
+      <button>Load</button>
+    </>
+  );
+};
+
+export default Skaters;
+```
+
+This is simply interating over an array of skaters and displaying the name and stance of each one.
+
+Let's extend it to take a useCache prop, and make a request for either the fresh or cached version of the skaters.
+
+```jsx
+import React, { useState } from "react";
+import { getCachedData, getFreshData } from "./utils/request";
+
+const url = "https://thps.now.sh/api/skaters";
+
+const renderSkater = ({ name, stance }) => (
+  <div key={name}>
+    <p>
+      {name} - {stance}
+    </p>
+  </div>
+);
+
+const Skaters = ({ useCache }) => {
+  const [skaters, setSkaters] = useState([]);
+
+  const getSkaters = async () => {
+    setSkaters([]);
+
+    if (useCache) {
+      const cachedSkaters = getCachedData(url);
+
+      if (cachedSkaters) {
+        setSkaters(cachedSkaters);
+      }
+    } else {
+      const freshSkaters = await getFreshData(url, useCache);
+      setSkaters(freshSkaters);
+    }
+  };
+
+  return (
+    <div>
+      <div>{skaters.map(renderSkater)}</div>
+      <button onClick={getSkaters}>Load</button>
+    </div>
+  );
+};
+
+export default Skaters;
+```
+
+Great, now we can render our Skaters component, either displaying a list of skaters from the cache or requesting a fresh copy from the API. There are a couple of bugs here though.
+
+- We can't actually display skaters from the cache if we have not yet made a request for fresh skaters and written them to the cache.
+- Once we have written the skaters to the cache once, they are there forever. We can never overwrite them or get fresh skaters if the API updates.
+
+Something that will fix both of these problems, and improve our user experience significantly is making a request for the cached version first and then requesting the fresh copy regardless of whether it was in the cache or not. This means if we have a cached version, it will display immediately and when fresh content is available it will automatically update the UI. This sounds complicated but all we really do is remove our else wrapping the fresh request logic.
+
+```jsx
+import React, { useState } from "react";
+import { getCachedData, getFreshData } from "./utils/request";
+
+const url = "https://thps.now.sh/api/skaters";
+
+const renderSkater = ({ name, stance }) => (
+  <div key={name}>
+    <p>
+      {name} - {stance}
+    </p>
+  </div>
+);
+
+const Skaters = ({ useCache }) => {
+  const [skaters, setSkaters] = useState([]);
+
+  const getSkaters = async () => {
+    setSkaters([]);
+
+    if (useCache) {
+      const cachedSkaters = getCachedData(url);
+      if (cachedSkaters) {
+        setSkaters(cachedSkaters);
+      }
+    }
+
+    const freshSkaters = await getFreshData(url, useCache);
+    setSkaters(freshSkaters);
+  };
+
+  return (
+    <div>
+      <div>{skaters.map(renderSkater)}</div>
+      <button onClick={getSkaters}>Load</button>
+    </div>
+  );
+};
+
+export default Skaters;
+```
+
+Awesome! Now our users will see the cached version immediately, and receive any updates once the API responds. Here is a gif demonstrating what this looks like.
+
+import demo from "./demo.gif";
+
+<Image src={demo} alt="Loading from cache vs API request" />
+
+As you can see, we can't provide the cached version the first time our users visit the page, but everytime they come back to see those sweet sweet skater stats, we can make the experience feel much more responsive!
+
+Check out the live version of this example or the GitHub repo to see how it all clicks together!
+
+> Note: You will need to clear local storage in the dev tools to see the first request again in the cached version (right).

@@ -1,0 +1,60 @@
+---
+export const prerender = true;
+
+import { type CollectionEntry, getCollection } from "astro:content";
+import BaseLayout from "../../layouts/base.astro";
+import Pre from "../../components/Pre.astro";
+import Code from "../../components/Code.astro";
+import { format } from "date-fns";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("blog");
+  return posts.map((post) => ({
+    params: { slug: post.slug },
+    props: post,
+  }));
+}
+type Props = CollectionEntry<"blog">;
+
+const {
+  data: { title, og_title, description, published_date },
+  render,
+} = Astro.props;
+
+const { Content } = await render();
+
+export const components = { pre: Pre, code: Code };
+---
+
+<BaseLayout title={title} og_title={og_title} description={description}>
+  <main
+    class="prose dark:prose-invert w-full mx-auto flex-1 my-10 p-2 md:my-20"
+  >
+    <h1 class="text-2xl md:text-3xl font-bold leading-normal mb-2">
+      {title}
+    </h1>
+    <span class="text-gray-300 text-xs">
+      {format(published_date, "do MMMM yyyy")}
+    </span>
+    <div class="flex my-10">
+      <img
+        src="/profile.png"
+        width="50"
+        height="50"
+        alt="Jon Meyers profile pic"
+        class="rounded-full my-0"
+      />
+      <div class="ml-4 text-sm flex flex-col justify-center">
+        <span class="block">Jon Meyers</span>
+        <a
+          href="http://twitter.com/jonmeyers_io"
+          class="block text-indigo-400 font-semibold"
+        >
+          @jonmeyers_io
+        </a>
+      </div>
+    </div>
+    <hr />
+    <Content components={components} />
+  </main>
+</BaseLayout>

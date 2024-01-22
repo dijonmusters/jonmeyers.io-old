@@ -1,0 +1,85 @@
+---
+import BaseLayout from "../layouts/base.astro";
+---
+
+<BaseLayout>
+  <main class="mx-auto flex-1 flex items-center max-w-[65ch] p-4">
+    <div class="bg-gradient-to-r p-0.5 from-[#7928ca] to-[#ff0080] rounded-md">
+      <div
+        class="bg-gray-900 rounded-md p-6 md:p-16 flex flex-col md:flex-row items-center"
+      >
+        <img
+          src="/profile.png"
+          alt="Picture of Jon Meyers"
+          width={100}
+          height={100}
+          class="rounded-full"
+        />
+        <div class="mt-8 md:mt-0 md:ml-8 text-xl">
+          <p class="m-0 mb-4">
+            My name is <span class="font-bold">Jon Meyers</span>. I teach people
+            web development through <a href="http://localhost:4321/blog"
+              >fun and approachable tutorials</a
+            >.
+          </p>
+          <ul class="list-none p-0 flex gap-3 m-0">
+            <li>
+              <a href="https://twitter.com/jonmeyers_io" target="_blank">
+                <span class="sr-only">Follow Jon on Twitter</span>
+                <svg
+                  viewBox="0 0 16 16"
+                  aria-hidden="true"
+                  width="32"
+                  height="32"
+                >
+                  <title>Twitter</title>
+                  <path
+                    fill="currentColor"
+                    d="M5.026 15c6.038 0 9.341-5.003 9.341-9.334 0-.14 0-.282-.006-.422A6.685 6.685 0 0 0 16 3.542a6.658 6.658 0 0 1-1.889.518 3.301 3.301 0 0 0 1.447-1.817 6.533 6.533 0 0 1-2.087.793A3.286 3.286 0 0 0 7.875 6.03a9.325 9.325 0 0 1-6.767-3.429 3.289 3.289 0 0 0 1.018 4.382A3.323 3.323 0 0 1 .64 6.575v.045a3.288 3.288 0 0 0 2.632 3.218 3.203 3.203 0 0 1-.865.115 3.23 3.23 0 0 1-.614-.057 3.283 3.283 0 0 0 3.067 2.277A6.588 6.588 0 0 1 .78 13.58a6.32 6.32 0 0 1-.78-.045A9.344 9.344 0 0 0 5.026 15z"
+                  ></path></svg
+                >
+              </a>
+            </li>
+            <li>
+              <a href="https://youtube.com/jonmeyers" target="_blank">
+                <span class="sr-only">Watch Jon on YouTube</span>
+                <svg height="32" width="32" viewBox="0 0 461.001 461.001">
+                  <title>YouTube</title>
+                  <g>
+                    <path
+                      fill="currentColor"
+                      d="M365.257,67.393H95.744C42.866,67.393,0,110.259,0,163.137v134.728
+								c0,52.878,42.866,95.744,95.744,95.744h269.513c52.878,0,95.744-42.866,95.744-95.744V163.137
+								C461.001,110.259,418.135,67.393,365.257,67.393z M300.506,237.056l-126.06,60.123c-3.359,1.602-7.239-0.847-7.239-4.568V168.607
+								c0-3.774,3.982-6.22,7.348-4.514l126.06,63.881C304.363,229.873,304.298,235.248,300.506,237.056z"
+                    ></path>
+                  </g>
+                </svg>
+              </a>
+            </li>
+            <li>
+              <a href="https://soundcloud.com/jonmeyers" target="_blank">
+                <span class="sr-only">Listen to Jon on Soundcloud</span>
+                <svg height="32" width="32" viewBox="0 0 291.319 291.319">
+                  <title>Soundcloud</title>
+                  <g>
+                    <path
+                      fill="currentColor"
+                      d="M72.83,218.485h18.207V103.832c-6.828,1.93-12.982,5.435-18.207,10.041
+		C72.83,113.874,72.83,218.485,72.83,218.485z M36.415,140.921v77.436l1.174,0.127h17.033v-77.682H37.589
+		C37.589,140.803,36.415,140.921,36.415,140.921z M0,179.63c0,14.102,7.338,26.328,18.207,33.147V146.52
+		C7.338,153.329,0,165.556,0,179.63z M109.245,218.485h18.207v-109.6c-5.444-3.396-11.607-5.635-18.207-6.5V218.485z
+		 M253.73,140.803h-10.242c0.519-3.168,0.847-6.382,0.847-9.705c0-32.182-25.245-58.264-56.388-58.264
+		c-16.896,0-31.954,7.775-42.287,19.955v125.695h108.07c20.747,0,37.589-17.388,37.589-38.855
+		C291.319,158.182,274.477,140.803,253.73,140.803z"
+                    ></path>
+                  </g>
+                </svg>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+</BaseLayout>

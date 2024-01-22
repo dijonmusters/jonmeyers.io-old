@@ -1,0 +1,129 @@
+---
+title: Store data in a cookie with sessions and Remix
+og_title: Store data in a cookie with sessions and Remix
+description: Sessions allow us to store arbitrary bits of json data in our cookies. Remix makes this super simple with the createCookieSessionStorage function, which creates helper functions for creating, reading and deleting sessions.
+published_date: 2022-07-06
+tags:
+  - Remix
+---
+
+In the [last article](https://jonmeyers.io/blog/create-a-simple-cookie-with-remix), we looked at creating a simple cookie in Remix to determine whether the user was visiting for the first time, or a returning regular. This is great for boolean logic — where they either have or haven't visited before — but if we want to store additional data in our cookie, we will need a session.
+
+Let's modify our previous example to not only track whether this is the user's first time on the page, but count how many times they have visited. For this we are going to use Remix's `createCookieSessionStorage` function. Create a new file at `app/utils/count-session.tsx` and populate with the following:
+
+```jsx
+import { createCookieSessionStorage } from "@remix-run/node";
+
+export const { getSession, commitSession, destroySession } =
+  createCookieSessionStorage({
+    cookie: {
+      name: "count-session",
+    },
+  });
+```
+
+`createCookieSessionStorage` returns three functions for managing our session:
+
+- `getSession` retrieves a session from a cookie string
+- `commitSession` creates a new cookie string
+- `destroySession` deletes session data and returns a cookie string
+
+Let's also create a new page at `app/routes/count.tsx` and add the following:
+
+```jsx
+import { json } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
+import { getSession, commitSession } from "~/utils/count-session";
+
+export const loader = async ({ request }: { request: Request }) => {};
+
+const Count = () => {
+  const data = useLoaderData();
+  return <pre>{JSON.stringify(data, null, 2)}</pre>;
+};
+
+export default Count;
+```
+
+In our `loader` function we want to:
+
+1. Read the session from the cookie headers
+
+   ```jsx
+   const session = await getSession(request.headers.get("Cookie"));
+   ```
+
+2. Increment by 1 if exists, otherwise set to 1
+
+   ```jsx
+   const numberOfVisits: number = session.get("numberOfVisits") + 1 || 1;
+   ```
+
+3. Create a new cookie string
+
+   ```jsx
+   session.set("numberOfVisits", numberOfVisits);
+   const cookie = await commitSession(session);
+   ```
+
+4. Return new value as response with updated cookie in headers
+
+   ```jsx
+   return json(
+     { numberOfVisits },
+     {
+       headers: {
+         "Set-Cookie": cookie,
+       },
+     }
+   );
+   ```
+
+The full component should look something like this:
+
+```jsx
+import { json } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
+import { getSession, commitSession } from "~/utils/count-session";
+
+export const loader = async ({ request }: { request: Request }) => {
+  // Read session from cookie
+  const session = await getSession(request.headers.get("Cookie"));
+
+  // Increment by 1 if exists, otherwise set to 1
+  const numberOfVisits: number = session.get("numberOfVisits") + 1 || 1;
+
+  // Create new cookie string
+  session.set("numberOfVisits", numberOfVisits);
+  const cookie = await commitSession(session);
+
+  // Set new cookie in headers
+  return json(
+    { numberOfVisits },
+    {
+      headers: {
+        "Set-Cookie": cookie,
+      },
+    }
+  );
+};
+
+const Count = () => {
+  const data = useLoaderData();
+  return <pre>{JSON.stringify(data, null, 2)}</pre>;
+};
+
+export default Count;
+```
+
+And that's it! 🎉
+
+If you navigate to http://localhost:3000/count and refresh a few times you should see the `numberOfVisits` value incrementing by 1 each time.
+
+```json
+{
+  "numberOfVisits": 404
+}
+```
+
+Thanks for reading! 🙌 While you're waiting for next week's article, why not [follow me on Twitter](https://twitter.com/jonmeyers_io)!

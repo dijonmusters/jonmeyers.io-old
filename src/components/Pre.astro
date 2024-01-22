@@ -1,0 +1,11 @@
+---
+const props = Astro.props;
+import CopyButton from "./CopyButton.astro";
+---
+
+<div
+  class="bg-gradient-to-r p-0.5 from-[#7928ca] to-[#ff0080] rounded-md relative my-10"
+>
+  <CopyButton />
+  <pre class="m-0 !bg-gray-900" {...props}><slot /></pre>
+</div>

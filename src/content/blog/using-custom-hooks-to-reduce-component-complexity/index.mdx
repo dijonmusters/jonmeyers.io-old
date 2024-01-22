@@ -1,0 +1,404 @@
+---
+title: Using custom hooks to reduce component complexity
+og_title: Using custom hooks to reduce component complexity
+description: Want to learn how React hooks work? In this article we learn a bit about the built-in useState and useEffect hooks. We then look at implementing our own custom react hook that can abstract away our complex fetching and caching logic.
+published_date: 2020-05-05
+tags:
+  - React
+---
+
+This article continues on from where Simple caching with local storage left off. Check that out for context on how local storage can be used as a super simple cache, when requesting data from an API.
+
+In this article we will look at abstracting our request and caching logic into reusable React Hook components. Hooks are a really nice way to bundle up our complicated and confusing code into a package that we don't need to think about anymore, and can reuse across our application and other projects!
+
+```jsx
+// src/utils/request.js
+
+import axios from "axios";
+import { readFromCache, writeToCache } from "./cache";
+
+const getFreshData = async (url, cacheResponse = false) => {
+  const { data } = await axios.get(url);
+  cacheResponse && writeToCache(url, data);
+  return data;
+};
+
+const getCachedData = (url) => readFromCache(url);
+
+export { getCachedData, getFreshData };
+```
+
+## React Hooks
+
+We have already been using the useState and useEffect hooks that are provided by React to simplify our data logic, but we can do so much more with our own custom hooks!
+
+The important parts to remember from the previous article are the request functions and our `<Skaters />` component.
+
+```jsx
+// src/utils/request.js
+
+import axios from "axios";
+import { readFromCache, writeToCache } from "./cache";
+
+const getFreshData = async (url, cacheResponse = false) => {
+  const { data } = await axios.get(url);
+  cacheResponse && writeToCache(url, data);
+  return data;
+};
+
+const getCachedData = (url) => readFromCache(url);
+
+export { getCachedData, getFreshData };
+```
+
+```jsx
+// src/Skaters.js
+
+import React, { useState } from "react";
+import { getCachedData, getFreshData } from "./utils/request";
+
+const url = "https://thps.now.sh/api/skaters";
+
+const renderSkater = ({ name, stance }) => (
+  <div key={name}>
+    <p>
+      {name} - {stance}
+    </p>
+  </div>
+);
+
+const Skaters = ({ useCache }) => {
+  const [skaters, setSkaters] = useState([]);
+
+  const getSkaters = async () => {
+    setSkaters([]);
+
+    if (useCache) {
+      const cachedSkaters = getCachedData(url);
+
+      if (cachedSkaters) {
+        setSkaters(cachedSkaters);
+      }
+    }
+
+    const freshSkaters = await getFreshData(url, useCache);
+    setSkaters(freshSkaters);
+  };
+
+  return (
+    <div>
+      <div>{skaters.map(renderSkater)}</div>
+      <button onClick={getSkaters}>Load</button>
+    </div>
+  );
+};
+
+export default Skaters;
+```
+
+Let's first look at refactoring our request logic as a custom React Hook. We can leave the old functions there as a reference and create a new hooks folder under the src directory. Inside this new folder create a new file named useRequest.js. By convention all hooks must start with the word use.
+
+Let's start with creating the skeleton for our useRequest hook, which will take in a url as a parameter.
+
+```jsx
+const useRequest = (url) => {};
+
+export default useRequest;
+```
+
+Next we are going to need some state and the ability to trigger our requests when our hook is being consumed, so let's bring in useState and useEffect.
+
+```jsx
+import { useState, useEffect } from "react";
+
+const useRequest = (url) => {
+  const [data, setData] = useState();
+
+  useEffect(() => {
+    // request data
+    // call setData with new value
+  }, []);
+
+  return data;
+};
+
+export default useRequest;
+```
+
+This should look pretty familiar. We have a data variable that is being returned from our hook. Anytime we update the value of that variable - by using setData - it will trigger a re-render for anything consuming our hook. You can think of this as a live variable. Any component using that variable does not need to understand when or why it will change, but anytime it does change the component will be told to re-render with the new value. Magic!
+
+useEffect is where we will add some logic for requesting fresh data from the API and updating our data variable with the response. We are giving it an empty array of dependencies [] so that this logic only runs when the hook is first consumed - meaning we are not requesting the data from the API over and over again, just once when our page is loaded. This is slightly different to the example in our previous article - where we were loading data based off a button click - but we don't want our users to have to wait for the page to be loaded and then click a button to see data. We can just give it to them as soon as we can!
+
+Let's bring in axios, make a request for our fresh data and update the data value with the response.
+
+```jsx
+import { useState, useEffect } from "react";
+import axios from "axios";
+
+const useRequest = (url) => {
+  const [data, setData] = useState();
+
+  const getFreshData = async () => {
+    const { data: response } = await axios.get(url);
+
+    setData(response);
+  };
+
+  useEffect(() => {
+    getFreshData();
+  }, []);
+
+  return data;
+};
+
+export default useRequest;
+```
+
+Something that may look a little weird here is
+
+```jsx
+const { data: response } = await axios.get(url);
+```
+
+The `{ data: response }` part is destructuring data from the response, but we already have a data variable in scope. data is the name of our state variable. This will cause a naming collision, as we won't know which data variable we are referring to. So the `{ data: response }` part is destructuring data and immediately renaming the variable to response. This makes our code a little clearer to read aswell, as on the next line we are setting our data variable to be equal to the response.
+
+Awesome! Now we have a useRequest hook that can be consumed by any component that needs to request data from an API. Using this hook in our `<Skaters />` component would look something like this.
+
+```jsx
+const url = "https://thps.now.sh/api/skaters";
+const skaters = useRequest(url);
+```
+
+Gosh, that is so much simpler! But now our component would need to check whether the skaters variable contained data before rendering it. Also, if we follow the useRequest logic, the data variable is initialised as null, and then its value is magically be updated to an array when the response comes back from the API. That will require some additional rendering logic in our `<Skaters />` component to determine whether our request is still waiting for the response (loading).
+
+Why don't we refactor our useRequest hook to provide this information, as determining the loading state of our data does feel like the responsibility of our request hook, rather than our rendering component. Plus it is super simple to do!
+
+```jsx
+import { useState, useEffect } from "react";
+import axios from "axios";
+
+const useRequest = (url) => {
+  const [data, setData] = useState();
+
+  const getFreshData = async () => {
+    const { data: response } = await axios.get(url);
+
+    setData(response);
+  };
+
+  useEffect(() => {
+    getFreshData();
+  }, []);
+
+  const loading = !data;
+
+  return {
+    data,
+    loading,
+  };
+};
+
+export default useRequest;
+```
+
+All we have changed are the last few lines of our hook. We created a loading variable - set to whether we actually have data or not - and instead of returning the data variable, we are returning an object with our data and loading states.
+
+Now our consuming component would look something like this.
+
+```jsx
+const url = "https://thps.now.sh/api/skaters";
+const { data, loading } = useRequest(url);
+```
+
+And again we could use that renaming while destructuring trick to give our data some context.
+
+```jsx
+const url = "https://thps.now.sh/api/skaters";
+const { data: skaters, loading } = useRequest(url);
+```
+
+Great! Now, remaining positive and assuming everything is going to go according to plan is always a good idea ... except in programming! We have a lovely interface exposing our loading and data states, but no way to tell if something went wrong. Let's add error handling. We can wrap our fetching logic in a try catch, which will attempt to run what is in the try block and then trigger the catch block if an error occurs.
+
+```jsx
+try {
+  // try something
+} catch (e) {
+  // an error happened
+}
+```
+
+Let's see what that would look like wrapping our request logic.
+
+```jsx
+import { useState, useEffect } from "react";
+import axios from "axios";
+
+const useRequest = (url) => {
+  const [data, setData] = useState();
+  const [error, setError] = useState();
+
+  const getFreshData = async () => {
+    try {
+      const { data: response } = await axios.get(url);
+
+      setData(response);
+    } catch (e) {
+      setError(e);
+    }
+  };
+
+  useEffect(() => {
+    getFreshData();
+  }, []);
+
+  const loading = !data && !error;
+
+  return {
+    data,
+    loading,
+    error,
+  };
+};
+
+export default useRequest;
+```
+
+There are a few small changes here. We added an error variable with useState, wrapped our fetching logic in a try catch, updated our loading state to account for errors, and exposed the error variable to our consumers.
+
+Awesome! Now our consuming component would look something like this.
+
+```jsx
+const url = "https://thps.now.sh/api/skaters";
+const { data: skaters, loading, error } = useRequest(url);
+
+if (loading) return <p>Loading...</p>;
+if (error) return <p>There was an error!</p>;
+
+// At this point we are confident that we have
+// our data so we can just render it!
+
+return skaters.map(renderSkaters);
+```
+
+The last thing we need to do here is implement our caching from the previous article. We can do this within the same hook and not need to change our consuming interface. All we need to do is modify our getFreshData to write the API response to the cache and create a new function to attempt to getCachedData first. This is what our final useRequest hook looks like.
+
+```jsx
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { readFromCache, writeToCache } from "./cache";
+
+const useRequest = (url) => {
+  const [data, setData] = useState();
+  const [error, setError] = useState();
+
+  const getFreshData = async () => {
+    try {
+      const { data: response } = await axios.get(url);
+      writeToCache(url, response);
+      setData(response);
+    } catch (e) {
+      setError(e);
+    }
+  };
+
+  const getCachedData = () => {
+    const cachedData = readFromCache(url);
+    cachedData && setData(cachedData);
+  };
+
+  useEffect(() => {
+    getCachedData();
+    getFreshData();
+  }, []);
+
+  const loading = !data && !error;
+
+  return {
+    data,
+    loading,
+    error,
+  };
+};
+
+export default useRequest;
+```
+
+Before refactoring our `<Skaters />` component let's take a quick look at what we had in the previous article.
+
+```jsx
+// src/Skaters.js
+
+import React, { useState } from "react";
+import { getCachedData, getFreshData } from "./utils/request";
+
+const url = "https://thps.now.sh/api/skaters";
+
+const renderSkater = ({ name, stance }) => (
+  <div key={name}>
+    <p>
+      {name} - {stance}
+    </p>
+  </div>
+);
+
+const Skaters = ({ useCache }) => {
+  const [skaters, setSkaters] = useState([]);
+
+  const getSkaters = async () => {
+    setSkaters([]);
+
+    if (useCache) {
+      const cachedSkaters = getCachedData(url);
+
+      if (cachedSkaters) {
+        setSkaters(cachedSkaters);
+      }
+    }
+
+    const freshSkaters = await getFreshData(url, useCache);
+    setSkaters(freshSkaters);
+  };
+
+  return (
+    <div>
+      <div>{skaters.map(renderSkater)}</div>
+      <button onClick={getSkaters}>Load</button>
+    </div>
+  );
+};
+
+export default Skaters;
+```
+
+It contains a lot of logic around caching and requesting that is not really related to skaters. Let's have a look at the refactored version and see what it's responsible for.
+
+```jsx
+// src/Skaters.js
+
+import React from "react";
+
+const url = "https://thps.now.sh/api/skaters";
+
+const renderSkater = ({ name, stance }) => (
+  <div key={name}>
+    <p>
+      {name} - {stance}
+    </p>
+  </div>
+);
+
+const Skaters = () => {
+  const { data: skaters, loading, error } = useRequest(url);
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>There was an error!</p>;
+
+  return skaters.map(renderSkater);
+};
+
+export default Skaters;
+```
+
+Wow! Firstly, it's a lot smaller, easier to read and the component doesn't need to know anything about caching or fetching logic. It simply uses our useRequest hook which handles the complexity and exposes our three different states: loading, error and data. This is a fairly common pattern for data fetching libraries - such as Apollo Client for GraphQL.
+
+This example does not implement the ability to make a request without using the cache. This is because the cache is cool! You wanna use the cache! Forever and always! Right? I guess if you really want to implement the ability to switch off the cache, or just take a look at the full working example, check out the THPS with hooks repo.

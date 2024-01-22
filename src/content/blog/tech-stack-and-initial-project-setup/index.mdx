@@ -1,0 +1,532 @@
+---
+title: Tech stack and initial project setup
+og_title: Tech stack and initial project setup
+description: This week is all about choosing our tech stack and setting up our initial project. We will be using Next.js, API routes (serverless functions), Prisma, PostgreSQL with Supabase and Tailwind. The majority of our SaaS project will be static, therefore, we will be using Next's pregeneration to generate static content at build time.
+published_date: 2021-04-14
+tags:
+  - Next.js
+---
+
+import ToC from "../../../components/ToC.astro";
+
+<ToC
+  title="Build a SaaS Platform with Next.js, Prisma, Auth0 and Stripe (series)"
+  list={[
+    {
+      title: "Tech stack and initial project setup",
+      url: "/blog/tech-stack-and-initial-project-setup",
+      isCurrent: true,
+    },
+    {
+      title:
+        "Hosting on Vercel, automatic deploys with GitHub and configuring custom domains",
+      url: "/blog/hosting-on-vercel-automatic-deploys-with-github-and-configuring-custom-domains",
+    },
+    {
+      title: "Authentication with Auth0 and Next.js",
+      url: "/blog/authentication-with-auth0-and-next-js",
+    },
+    {
+      title: "Social login with GitHub and Auth0 rules",
+      url: "/blog/social-login-with-github-and-auth0-rules",
+    },
+    {
+      title: "Processing payments with Stripe and webhooks",
+      url: "/blog/processing-payments-with-stripe-and-webhooks",
+    },
+    {
+      title: "Implementing subscriptions with Stripe",
+      url: "/blog/implementing-subscriptions-with-stripe",
+    },
+  ]}
+/>
+
+Week one down! How exciting! This week was all about coming up with an idea and configuring the new project. I will be keeping the [GitHub repo](https://github.com/dijonmusters/courses) up to date as I build out this project so make sure you check that out!
+
+## Idea
+
+I will be building a video tutorial/course platform that contains a collection of free and paid courses. You will be able to watch any of the free courses once you create an account. For the premium content, you can choose to purchase a single course to own forever, or subscribe on a monthly or yearly basis to access all the premium courses.
+
+## Readme Driven Development (RDD)
+
+I will be following Tom Preston-Werner's [Readme Driven Development](https://tom.preston-werner.com/2010/08/23/readme-driven-development.html) methodology, whereby the first thing you create is a readme describing your project. My key takeaways from Tom's article were:
+
+- Making a product for users is a waste of time if it doesn't provide value
+- Thinking about how your software will be used gives you a pathway with achievable milestones
+- Helps inform tech decisions
+- Creates a shared language and understanding across other devs and stakeholders.
+
+You can checkout my [readme](https://github.com/dijonmusters/courses/blob/master/README.md) to see what I am planning to build.
+
+## Stack
+
+As the majority of this project can be statically generated ahead of time I will be building a Jamstack app. This will help keep the loading speed fast for users and keep the hosting costs ~~down~~ free!
+
+## Next.js
+
+Since most of the content can be generated at build time I was keen to use something that makes this process simple - Next.js or Gatsby. I went with Next.js as it gives me all that SSG (Static Site Generation) magic I am after, but also offers SSR (Server Side Rendering) if my application does require it in the future!
+
+Additionally, I really like Next's API for generating static content. You just declare a getStaticProps function, co-located with the page component that uses the data. Next.js will iterate over any components that declare this function and make these requests at build time. I find this workflow to be a little more convenient than Gatsby, and requires less context switching than jumping out of the component and implementing some data fetching in gatsby-node.js.
+
+That is just personal preference though. Both of these frameworks are absolutely awesome and are perfectly capable of building what we need!
+
+Setting up Next.js was super simple. Just create a new folder and initialise it as an NPM project. My project will be called `courses`.
+
+```bash
+mkdir courses && cd courses && npm init -y
+```
+
+Now to install Next.js and its dependencies.
+
+```bash
+npm i next react react-dom
+```
+
+Let's add some scripts to build and run our application. In the package.json file, replace the test script (that no-one uses in a side project) with the following.
+
+```json
+"scripts": {
+	"dev": "next dev",
+	"build": "next build",
+	"start": "next start",
+	"export": "next export"
+}
+```
+
+Next.js uses file-based routing so we can create pages simply by putting React components in the pages directory.
+
+```bash
+mkdir pages
+```
+
+Now create an index.js file and add the following code to create a welcoming home page.
+
+```jsx
+// pages/index.js
+
+const HomePage = () => <h1>Welcome to Courses!</h1>;
+
+export default HomePage;
+```
+
+We now have a fully functioning Next.js application. Run the following command and go and visit it at [http://localhost:3000](http://localhost3000/).
+
+```bash
+npm run dev
+```
+
+## API routes
+
+We will need some serverside code in order to process payments with Stripe and interact with the database. These chunks of serverside code will be quite isolated and single purpose. This is a perfect usecase for serverless functions and Next.js makes this super simple!
+
+Just create an API folder in the pages directory!
+
+```bash
+mkdir pages/api
+```
+
+And add a test.js file with the following content.
+
+```jsx
+// pages/api/test.js
+
+module.exports = async (req, res) => {
+  res.send("it works!");
+};
+```
+
+That's it! It's done! To run this serverless function just go to http://localhost:3000/api/test.
+
+> Next.js will pick up any .js files in this api folder and automatically turn them into serverless functions!
+
+Super cool!
+
+## SQL vs Document DB
+
+We are going to need a database to store information about our users, and remember which courses they have purchased. There are a huge number of options here, but first we need to decide whether we want to use an SQL db - such as PostgreSQL - or a document db - such as MongoDB.
+
+The biggest factor to consider between these two options is how you want to model relationships between different bits of data. An SQL db can stitch together data from different tables using one complex query, whereas you may need to do multiple queries in a document db, and stitch it together yourself.
+
+Our application is going to be hosted on a different server to our db - potentially in a different continent - so making a single request, letting the db do some of the hard work and sending back a smaller dataset is likely going to be much more performant.
+
+Again, the scope of this application is quite small so this is probably not going to be a problem, but since we know we will need at least a relationship between our user and the courses they have purchased, I am going to go with an SQL solution.
+
+Additionally, the methodology of the Jamstack is all about being able to scale up easily and I think SQL gives us more options than a document db as things get more complex!
+
+## Supabase
+
+Again, there are a million options for a hosted SQL database. I have used Heroku extensively in the past and would highly recommend, however, I have been looking for an excuse to try Supabase and I think this is it!
+
+Supabase is an open source competitor to Firebase. They offer a whole bunch of services - db hosting, query builder language, auth etc - however, we are just going to use it as a free db host.
+
+Head on over to [their website](https://app.supabase.io/) and create an account.
+
+Once you're at the dashboard click `create a new project` - make sure to use a strong password (and copy it somewhere as we will need it again soon!) and pick a region that is geographically close to you!
+
+Once it is finished creating a DB, head over to Settings > Database and copy the Connection String. We are going to need this in the next step!
+
+## Prisma
+
+Now we need to decide how we want to interact with our database. We could just send across big SQL query strings, but we're not living in the dark ages anymore!
+
+I have a background in Rails and really like the ORM (object relational mapping) style of interacting with databases so I am going to choose Prisma!
+
+Prisma is a query builder. It basically abstracts away complex SQL queries and allows you to write JavaScript code to talk to the DB. It's awesome! You'll see!
+
+Let's set it up! First we need to install it as a dev dependency
+
+```bash
+npm i -D prisma
+```
+
+Now we initialise Prisma in our project.
+
+```bash
+npx prisma init
+```
+
+Next we need to create our models - how we want to represent our data.
+
+```jsx
+// prisma/schema.prisma
+
+generator client {
+	provider = "prisma-client-js"
+}
+
+datasource db {
+	provider = "postgresql"
+	url      = env("DATABASE_URL")
+}
+
+model Course {
+	id        Int      @id @default(autoincrement())
+	title     String   @unique
+	createdAt DateTime @default(now())
+	lessons   Lesson[]
+}
+
+model Lesson {
+	id        Int      @id @default(autoincrement())
+	title     String   @unique
+	courseId  Int
+	createdAt DateTime @default(now())
+	course    Course   @relation(fields: [courseId], references: [id])
+}
+```
+
+Here we are creating a course which has a collection of lessons. A lesson belongs to a course.
+
+We are just going to focus on our courses for now - users can come later!
+
+Now we want to update the DATABASE_URL in our .env with that connection string from Supabase.
+
+```
+// .env
+
+DATABASE_URL="your connecting string"
+```
+
+Make sure you replace the password in the connection string with the password you used to create the Supabase project!
+
+Now we need to make sure we add this .env file to our .gitignore so as to never commit our secrets to GitHub.
+
+```
+// .gitignore
+
+node_modules/
+.next/
+.DS_Store
+out/
+.env
+```
+
+Okay, now that we have this hooked up to an actual database, we want to tell it to match our schema.prisma file. We do this by pushing the changes.
+
+```bash
+npx prisma db push --preview-feature
+```
+
+We need to pass the --preview-feature flag as this is an experimental feature, and may change in the future.
+
+Now we want to install the Prisma client, which we will use to send queries to our database.
+
+```bash
+npm i @prisma/client
+```
+
+And generate our client based on the schema.
+
+```bash
+npx prisma generate
+```
+
+Lastly, let's create a serverless function to create some data in our database, and confirm everything is wired up correctly!
+
+```jsx
+// pages/api/create-course
+
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+module.exports = async (req, res) => {
+  await prisma.course.create({
+    data: {
+      title: "Learning to code!",
+      lessons: {
+        create: { title: "Learn the terminal" },
+      },
+    },
+  });
+  // TODO: send a response
+};
+```
+
+This will create a new course with the title `Learning to code!`, but it will also create the first lesson `Learn the terminal`.
+
+This is the power of using a query builder like Prisma! Queries that would be quite complex in SQL are super easy to write and reason about!
+
+Let's add another prisma query to select the data we have written to the DB and send it back as the response.
+
+```jsx
+// pages/api/create-course.js
+
+module.exports = async (req, res) => {
+  // write to db
+  const courses = await prisma.course.findMany({
+    include: {
+      lessons: true,
+    },
+  });
+  res.send(courses);
+};
+```
+
+Our entire function should look like this.
+
+```jsx
+// pages/api/create-course.js
+
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+module.exports = async (req, res) => {
+  await prisma.course.create({
+    data: {
+      title: "Learning to code!",
+      lessons: {
+        create: { title: "Learn the terminal" },
+      },
+    },
+  });
+  const courses = await prisma.course.findMany({
+    include: {
+      lessons: true,
+    },
+  });
+  res.send(courses);
+};
+```
+
+Excellent! Now we can run this serverless function by navigating to http://localhost:3000/api/create-course.
+
+You should get back the newly created course and lesson. We can also see this has actually been written to the DB by inspecting our data in the Supabase dashboard.
+
+I recommend deleting this serverless function to avoid accidentally running it later and adding unnecessary courses! If you want to keep it as a reference, just comment out the code that creates the course.
+
+```jsx
+// api/create-course.js
+
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+module.exports = async (req, res) => {
+  // await prisma.course.create({
+  //   data: {
+  //     title: 'Learning to code!',
+  //     lessons: {
+  //       create: { title: 'Learn the terminal' },
+  //     },
+  //   },
+  // })
+  // const courses = await prisma.course.findMany({
+  //   include: {
+  //     lessons: true,
+  //   },
+  // })
+  // res.send(courses)
+  res.send("This is only here as a guide!");
+};
+```
+
+Okay! Let's wire this up to Next!
+
+## SSG
+
+Back in our pages/index.js component we want to query our DB for all courses and display them in a list. We could make this request when a user visits our site, but since this data is not going to change very often this will mean a huge number of unnecessary requests to our API and a lot of users waiting for the same data over and over again!
+
+What if we just requested this data when we build a new version of our application and bake the result into a simple HTML page. That would speed things up significantly and keep our users happy! A happy user is a user who wants to buy courses!
+
+Next.js makes this super simple with a function called getStaticProps. Lets extend our index.js file to export this function.
+
+```jsx
+export const getStaticProps = async () => {
+  const data = await getSomeData();
+
+  return {
+    props: {
+      data, // this will be passed to our Component as a prop
+    },
+  };
+};
+```
+
+Since this is going to be run when Next.js is building our application, it will be run in a node process, rather than in a browser. This might seem confusing since it is being exported from a component that will be running in the user's browser, but at build time there is no user - there is no browser!
+
+Therefore, we will need a way to make a request to our API from node. I am going to use Axios because I really like the API, but any HTTP request library will do!
+
+```jsx
+// pages/index.js
+
+const Homepage = ({ courses }) => {
+  return (
+    <div>
+      <h1>Courses</h1>
+      <pre>{JSON.stringify(courses, null, 2)}</pre>
+    </div>
+  );
+};
+
+export default Homepage;
+```
+
+Whatever we return from getStaticProps will be passed into our component, so let's display that JSON blob in our component.
+
+> We can pass `JSON.stringify` additional arguments (null and 2) in order to pretty print our data.
+
+Our whole component should look like this.
+
+```jsx
+// pages/index.js
+
+import axios from "axios";
+
+const Homepage = ({ courses }) => {
+  return (
+    <div>
+      <h1>Courses</h1>
+      <pre>{JSON.stringify(courses, null, 2)}</pre>
+    </div>
+  );
+};
+
+export const getStaticProps = async () => {
+  const { data } = await axios.get("http://localhost:3000/api/get-courses");
+
+  return {
+    props: {
+      courses: data,
+    },
+  };
+};
+
+export default Homepage;
+```
+
+Now we just need to create that get-courses serverless function.
+
+```jsx
+// pages/api/get-courses.js
+
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
+
+module.exports = async (req, res) => {
+  const courses = await prisma.course.findMany({
+    include: {
+      lessons: true,
+    },
+  });
+  res.send(courses);
+};
+```
+
+That's it! We should now have an entire system wired up end-to-end!
+
+- Next.js is requesting our courses from the serverless function at build time
+- Our serverless function is using Prisma to query the Supabase DB for the courses
+- The results are piping through from Supabase -> Serverless function -> Next.js, which is baking them into a static page
+- The user requests this page and can see the courses
+
+## Tailwind
+
+I also decided to challenge my opinion that Tailwind is just ugly inline styles, and actually give it a try! You will be hearing from me often if I do not like it!
+
+Let's install it!
+
+```bash
+npm i -D tailwindcss@latest postcss@latest autoprefixer@latest
+```
+
+Next let's initialise some configuration.
+
+```bash
+npx tailwindcss init -p
+```
+
+We can also tell Tailwind to remove any unused styles in prod.
+
+```jsx
+// tailwind.config.js
+
+module.exports = {
+  purge: ["./pages/**/*.{js,ts,jsx,tsx}", "./components/**/*.{js,ts,jsx,tsx}"],
+  darkMode: false, // or 'media' or 'class'
+  theme: {
+    extend: {},
+  },
+  variants: {
+    extend: {},
+  },
+  plugins: [],
+};
+```
+
+We are going to want to import Tailwind's CSS on every page, so will create an \_app.js file, which automatically wraps every page component.
+
+```jsx
+import "tailwindcss/tailwind.css";
+import "../styles/globals.css";
+
+const MyApp = ({ Component, pageProps }) => <Component {...pageProps} />;
+
+export default MyApp;
+```
+
+Lastly, create a styles/globals.css file to import the Tailwind bits.
+
+```css
+// styles/globals.css
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+Awesome, now we have Tailwind configured. Check out [their docs](https://tailwindcss.com/docs) for great examples!
+
+I will not be focusing on the styling aspect of this project throughout the blog series, but feel free to check out [the repo](https://github.com/dijonmusters/courses) for pretty examples.
+
+## Great resources
+
+- [Readme Driven Development](https://tom.preston-werner.com/2010/08/23/readme-driven-development.html)
+- [Next.js docs](https://nextjs.org/docs/getting-started)
+- [Prisma in Next.js app](https://www.prisma.io/docs/getting-started/setup-prisma/add-to-existing-project-typescript-postgres)
+- [Supabase docs](https://supabase.io/docs/)
+
+## Next week
+
+[Hosting on Vercel, automatic deploys with GitHub and configuring custom domains](https://jonmeyers.io/blog/build-a-saas-platform-with-stripe/hosting-on-vercel-automatic-deploys-with-github-and-configuring-custom-domains)

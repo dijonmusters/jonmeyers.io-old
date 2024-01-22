@@ -1,0 +1,97 @@
+---
+title: Add authentication to Remix and Supabase app
+og_title: Add authentication to Remix and Supabase app
+description: Supabase makes authentication supa simple with the Supabase UI library. In this article, we look at installing this package, wrapping our application in a magic Provider to do the heavy lifting and building a login page — allowing our users to create an account and sign in.
+published_date: 2022-04-26
+tags:
+  - Remix
+  - Auth
+---
+
+import { Image } from "astro:assets";
+
+In the [last article](https://jonmeyers.io/blog/create-an-isomorphic-supabase-client-in-remix-with-environment-variables), we looked at creating an isomorphic Supabase client — able to query data on the client and server. Let's add authentication so our users can create accounts and login.
+
+> 🚀 Just want the final version of the code, check out the [Github repo](https://github.com/dijonmusters/remix-supabase-example/tree/main/02-supabase-auth).
+
+## Supabase UI
+
+Supabase make this very easy for us with the `Auth` component from `Supabase UI`. Let's install the package.
+
+```bash
+npm i @supabase/ui
+```
+
+We can then import the `<Auth>` component in `app/routes/root.jsx`.
+
+```jsx
+import { Auth } from "@supabase/ui";
+```
+
+We also need our isomorphic Supabase client.
+
+```jsx
+import supabase from "./utils/supabase";
+```
+
+And now we can wrap our `<Outlet />` component in Supabase's `Provider`.
+
+```jsx
+<Auth.UserContextProvider supabaseClient={supabase}>
+  <Outlet />
+</Auth.UserContextProvider>
+```
+
+Now we need a login page so let's create that at `app/routes/login.jsx` and populate with the following.
+
+```jsx
+import { Auth } from "@supabase/ui";
+import supabase from "../utils/supabase";
+
+export default () => {
+  return <Auth supabaseClient={supabase} />;
+};
+```
+
+And that's it!
+
+Navigate to http://localhost:3000/login, click `Don't have an account? Sign up` and enter an email address and password.
+
+> ❗️ This will need to be a real email address, as it will automatically send an email to verify.
+
+Open up your new email from Supabase and click `Confirm your mail`.
+
+Our user is now authenticated! 🎉 We can confirm this by adding the following to our `app/routes/index.jsx` component.
+
+```jsx
+import { Auth } from "@supabase/ui";
+
+// the rest of component declaration
+const { session, user } = Auth.useUser();
+console.log({ session, user });
+```
+
+And we can see the `user` and `session` objects are printed to the browser's console.
+
+```json
+{
+  "session": null,
+  "user": null
+}
+```
+
+> If you want to go deeper on authentication and design your own email and password form, check out my new [Level Up Tutorials course](https://leveluptutorials.com/tutorials/realtime-remix-with-supabase) where we do just that!
+
+Now this is _technically_ working. We can see the signed in user on the client, but if we were to look on the server — our dev console since the first render uses server-side rendering (SSR) — we would see that both our `user` and `session` are set to `null`.
+
+import userObject from "./user-object.png";
+
+<Image src={userObject} alt="User object" />
+
+What is going on here? 🤔
+
+Supabase Auth takes place client-side and uses `localStorage` to store our user's `accessToken` — automatically forwarded with each client-side query to Supabase. The server does not have access to values in our user's `localStorage`, as this lives in their browser. If we want the server to know who our user is, and forward this information onto our server-side request to Supabase, we need to create a delicious cookie 🍪
+
+And this is exactly what we will tackle in the next article!
+
+Thanks for reading 🙌

@@ -1,0 +1,45 @@
+---
+import type { ImageMetadata } from "astro";
+
+import { Image } from "astro:assets";
+import BaseLayout from "../../layouts/base.astro";
+import { getCollection } from "astro:content";
+import { format } from "date-fns";
+
+const courses = (await getCollection("courses")).sort(
+  (a, b) => b.data.published_date.valueOf() - a.data.published_date.valueOf()
+);
+
+const coursePath = "/src/content/courses";
+
+const images = import.meta.glob<{ default: ImageMetadata }>(
+  "/src/content/courses/**/*.{jpeg,jpg,png,gif}"
+);
+---
+
+<BaseLayout>
+  <main class="mx-auto flex-1 my-10 md:mt-20 max-w-[65ch] p-4">
+    <ul class="grid grid-cols-1 md:grid-cols-2">
+      {
+        courses.map((course) => (
+          <li class="m-8">
+            <a href={course.data.url}>
+              <Image
+                src={images[`${coursePath}/${course.slug}/og.png`]()}
+                alt="OG image for course"
+                class="rounded-md mb-8"
+              />
+              <h2 class="font-bold text-2xl">{course.data.title}</h2>
+              <span class="text-gray-300 text-xs">
+                {format(course.data.published_date, "do MMMM yyyy")}
+              </span>
+              <p class="text-gray-300 text-sm mt-4 leading-relaxed">
+                {course.data.description}
+              </p>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </main>
+</BaseLayout>

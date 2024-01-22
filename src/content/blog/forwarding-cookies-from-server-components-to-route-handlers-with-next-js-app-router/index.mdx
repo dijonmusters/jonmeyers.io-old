@@ -1,0 +1,148 @@
+---
+title: Forwarding cookies from Server Components to Route Handlers with Next.js App Router
+og_title: Forward cookies from Server Components to Route Handlers in Next.js
+description: When using cookies and the Next.js App Router, headers are not automatically forwarded from Server Components to Route Handlers. Thankfully, we can easily attach the headers sent from the browser to the Server Component, through to our Route Handler — making the user's auth session available throughout our entire Next.js app! 🚀
+published_date: 2023-07-09
+tags:
+  - Auth
+  - Next.js
+---
+
+In [this video about implementing cookie-based auth with Next.js Route Handers](https://www.youtube.com/watch?v=KmJN-bEayeY&t=595s), I claimed there was a bug where Server Components were not correctly piping through cookies to the GET method of Route Handlers.
+
+Turns out my mental model was completely wrong! [Next.js does not have a bug and this behaviour is totally expected](https://github.com/vercel/next.js/issues/47682)! 🤦‍♂️
+
+TLDR; We need to manually attach the headers from the original request to the `fetch` call made from the Server Component 👇
+
+```jsx
+import { headers } from "next/headers";
+
+export default async function Page() {
+  await fetch("http://localhost:3000/test", {
+    headers: headers(),
+  });
+
+  return ...
+}
+```
+
+The problem is that the cookie — an auth token, for example — is set between our browser and the server. When our browser requests a Server Component route, it sends the cookies along with the request:
+
+`Browser → Server Component`
+
+If the Server Component makes a `fetch` call to a Route Handler, it doesn 't know to attach the original request 's headers and cookies.
+
+`Browser → Server Component → Route Handler`
+
+If we want them to be available in the Route Handler, we need to manually attach them to the `fetch` request from the Server Component.
+
+To step through this problem, add a new file at `app/test/route.ts` to your Next.js App Router project, with the following content:
+
+```jsx
+import { cookies } from "next/headers";
+
+export async function GET() {
+  console.log(cookies().getAll());
+  return new Response("working");
+}
+```
+
+This will console log any cookies that are passed to this Route Handler.
+
+Now create a Server Component that calls this Route Handler before rendering the page:
+
+```jsx
+export default async function Page() {
+  await fetch("http://localhost:3000/test");
+  return <h1>Hello</h1>;
+}
+```
+
+When loading this route, we get an empty array printed out to the console. This is what we expect as we don 't yet have any cookies. Let 's add a 🍪!
+
+Extend the `test` Route Handler to handle `POST` requests, and use this to set a cookie:
+
+```jsx
+export async function POST() {
+  cookies().set("is-jon-cool", "absolutely");
+  return new Response("working");
+}
+```
+
+The whole Route Handler now looks like this:
+
+```jsx
+import { cookies } from "next/headers";
+
+export async function GET() {
+  console.log(cookies().getAll());
+  return new Response("working");
+}
+
+export async function POST() {
+  cookies().set("is-jon-cool", "absolutely");
+  return new Response("working");
+}
+```
+
+Let 's call this `POST` handler when we click a button - we will need a Client Component for this.
+
+Create a new file called `client.tsx` and populate with the following:
+
+```jsx
+"use client";
+
+export default function Client() {
+  const handleCookie = async () => {
+    await fetch("http://localhost:3000/test", {
+      method: "post",
+    });
+  };
+
+  return <button onClick={handleCookie}>Set cookie</button>;
+}
+```
+
+Update our Server Component Route to render this Client Component.
+
+```jsx
+import Client from "./client";
+
+export default async function Page() {
+  await fetch("http://localhost:3000/test");
+  return <Client />;
+}
+```
+
+Now when we click that button it sets a new cookie, but when we refresh the page — triggering the `GET` request from our Server Component to the Route Handler — we expect to see our new cookie value printed to the console, but again we see an empty array!
+
+What is going on?
+
+The problem is when we click the button in our Client Component, it is making a `POST` request from the browser to the Route Handler. This sets our new cookie in the browser.
+
+`Browser → Route Handler`
+
+When we refresh the page, a request is made from the browser to our Server Component route — this has the cookie attached.
+
+`Browser → Server Component`
+
+But then our Server Component is making another request to our Route Handler, and by default it doesn 't forward any of our headers from the browser 's request.
+
+`Browser → Server Component → Route Handler`
+
+So all we need to do to fix this is pass those headers along from our Server Component to the Route Handler.
+
+```jsx
+import Client from "./client";
+import { headers } from "next/headers";
+
+export default async function Page() {
+  await fetch("http://localhost:3000/test", {
+    headers: headers(),
+  });
+
+  return <Client />;
+}
+```
+
+Now if we refresh we will see our delicious cookie printed out to the console! 🚀

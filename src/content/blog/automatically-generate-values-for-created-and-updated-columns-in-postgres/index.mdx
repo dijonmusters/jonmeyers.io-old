@@ -1,0 +1,123 @@
+---
+title: Automatically generate values for created and updated columns in Postgres
+og_title: Automatically generate values for created and updated columns in Postgres
+description: Audit columns help to understand when data was changed and by whom. In this article, we explore some options for automatically generating values for created_at, created_by, updated_at and updated_by columns in a postgres database table.
+published_date: 2024-01-17
+tags:
+  - Postgres
+---
+
+import Tweet from "astro-tweet";
+
+This tweet from @iameoghan prompted me to think through some possible solutions for automatically generating values for `created_at`, `created_by`, `updated_at` and `updated_by` columns in a database table.
+
+<div class="mx-auto flex justify-center">
+  <Tweet id="1747426351743914413" />
+</div>
+
+Let's create a basic `posts` table to use as an example:
+
+```sql
+create table posts (
+  id serial primary key,
+  title text,
+  created_at timestamp with time zone,
+  created_by uuid references auth.users(id),
+  updated_at timestamp with time zone,
+  updated_by uuid references auth.users(id)
+);
+```
+
+> `created_by` and `updated_by` reference the `auth.users` table. This is a table managed by Supabase that stores information about users and their sessions.
+
+## Updated columns
+
+Let's tackle the `updated` columns first, as we only really have one option: a `trigger` function to set the values when the row is updated. Let's create a function to handle this:
+
+```sql
+create or replace function set_updated_columns()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  new.updated_by = auth.uid();
+  return new;
+end;
+$$ language plpgsql;
+```
+
+The `now()` function returns a timestamp, so this can be used to determine when the post was updated. `auth.uid()` is a special Supabase function that returns the ID of the currently signed in user.
+
+We then want to run this function before each row is updated in the posts table:
+
+```sql
+create trigger on_update_set_updated_columns
+before update on posts
+for each row execute procedure set_updated_columns();
+```
+
+Perfect! Now, any time a user updates a post, the `updated_at` and `updated_by` columns will be automatically set.
+
+An added security benefit here is that the user can not overwrite these values - setting `updated_at` to a different time, or saying `updated_by` was a different user:
+
+```sql
+update posts
+set
+  updated_at = '2021-01-01',
+  updated_by = '123e4567-e89b-12d3-a456-426614174000'
+where id = 1;
+```
+
+After the update completes, the values for these columns with still come from the `now()` and `auth.uid()` functions.
+
+## Created columns
+
+For the `created` columns we have two options:
+
+1. Use a `trigger` function to set the value - similar to the `updated` columns
+2. Use a `default` value for the column
+
+Setting a default value is definitely the simpler option, and we already understand triggers, so let's alter our table to set some default values:
+
+```sql
+alter table posts
+  alter column created_at
+  set default now(),
+  alter column created_by
+  set default auth.uid();
+```
+
+Since this default value is just a default, it can still be overwritten by the user, as discussed above.
+
+Again, we could use a `trigger` function, or we could backup this default value with an Row Level Security (RLS) policy to ensure the user is not tinkering with things that should not be tinkered with!
+
+Let's turn on RLS for our posts table:
+
+```sql
+alter table posts enable row level security;
+```
+
+And then specifiy a policy that only allows the user to insert posts where the created_by column matches their user ID:
+
+```sql
+create policy user_can_create_their_own_post
+on posts
+for insert to public
+with check (created_by = auth.uid());
+```
+
+To be even more cautious, we could make sure that the `updated_by` column is set to `null`, as the trigger function we declared earlier only runs on update, not insert. When a new row is inserted it has not yet been updated, therefore, the value should be `null`:
+
+```sql
+create policy user_can_create_their_own_post
+on posts
+for insert to public
+with check (created_by = auth.uid() and updated_by is null);
+```
+
+And that's it!
+
+1. When a user inserts a new post, the `created_at` and `created_by` columns will be automatically populated
+2. When a user updates a post, the `updated_at` and `updated_by` columns will be automatically populated
+3. The user will not be able to overwrite any of these values.
+
+If you want me to cover any other topics related to Supabase, Postgres or SQL, give me a follow on [Twitter](https://twitter.com/jonmeyers_io) and ping me in a tweet!

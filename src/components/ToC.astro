@@ -1,0 +1,30 @@
+---
+type Item = {
+  title: string;
+  url: string;
+  isCurrent?: boolean;
+};
+
+type Props = {
+  title: string;
+  list: Item[];
+};
+
+const props = Astro.props;
+---
+
+<h2>{props.title}</h2>
+
+<ol>
+  {
+    props.list.map((item) => (
+      <a href={item.url} class="no-underline hover:underline">
+        <li class={item.isCurrent ? "font-bold" : "text-gray-400"}>
+          {item.title}
+        </li>
+      </a>
+    ))
+  }
+</ol>
+
+<hr />

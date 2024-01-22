@@ -1,0 +1,379 @@
+---
+title: Social login with GitHub and Auth0 rules
+og_title: Social login with GitHub and Auth0 rules
+description: This week is all about Auth0's awesomeness! We implement social login so our users can authenticate with an existing GitHub account, rather than creating yet another username and password for our application. We also look at implementing webhooks with Auth0 that let our Next.js app know when a new user logs in for the first time! We can use this to create a local User in our Prisma database to store additional information - such as courses they have purchased!
+published_date: 2021-05-05
+tags:
+  - Next.js
+---
+
+import { Image } from "astro:assets";
+
+import ToC from "../../../components/ToC.astro";
+
+<ToC
+  title="Build a SaaS Platform with Next.js, Prisma, Auth0 and Stripe (series)"
+  list={[
+    {
+      title: "Tech stack and initial project setup",
+      url: "/blog/tech-stack-and-initial-project-setup",
+    },
+    {
+      title:
+        "Hosting on Vercel, automatic deploys with GitHub and configuring custom domains",
+      url: "/blog/hosting-on-vercel-automatic-deploys-with-github-and-configuring-custom-domains",
+    },
+    {
+      title: "Authentication with Auth0 and Next.js",
+      url: "/blog/authentication-with-auth0-and-next-js",
+    },
+    {
+      title: "Social login with GitHub and Auth0 rules",
+      url: "/blog/social-login-with-github-and-auth0-rules",
+      isCurrent: true,
+    },
+    {
+      title: "Processing payments with Stripe and webhooks",
+      url: "/blog/processing-payments-with-stripe-and-webhooks",
+    },
+    {
+      title: "Implementing subscriptions with Stripe",
+      url: "/blog/implementing-subscriptions-with-stripe",
+    },
+  ]}
+/>
+
+[Project repo](https://github.com/dijonmusters/courses)
+
+This week we look at using Auth0's social signon to authenticate with GitHub. We also setup webhooks to create a local user in our Prisma database anytime a new user logs into Auth0.
+
+## Social login with GitHub
+
+Enabling different social providers is super simple with Auth0. Follow [this guide](https://auth0.com/docs/get-started/dashboard/set-up-social-connections) to configure a range of social providers - Google, Facebook, Twitter etc. I am just going to setup GitHub.
+
+> By default Auth0 has local username and password configured. Disable this to enforce only signing in with social providers.
+
+## Auth0 Hooks
+
+We are going to setup a webhook that sends a request to one of our serverless functions anytime a new user logs into Auth0. We can create a Rule in Auth0 to do this.
+
+```jsx
+async function (user, context, callback) {
+  // do some stuff
+  callback(null, user, context);
+}
+```
+
+> Rules are serverless functions that Auth0 will call anytime a user logs in
+
+Auth0 tells us who the user signing in is, gives us a context object with additional data and a callback function that we can invoke to continue the sign in process.
+
+The first parameter the callback expects is an error. If this is null or undefined it will continue the sign in process. If this parameter is any truthy value it will throw an exception and stop the sign in process.
+
+> If we do not invoke the callback function the sign in process will eventually timeout.
+
+Let's setup a new API route in our Next.js application to handle the request from the Auth0 hook.
+
+```jsx
+// pages/api/auth/hooks.js
+
+module.exports = async (req, res) => {
+  const { email } = JSON.parse(req.body);
+  // create user in prisma
+  console.log("created user");
+  res.send({ received: true });
+};
+```
+
+> We need to call res.send so that the hook receives a 200 status code and can keep going with the sign in process.
+
+Now let's update our Auth0 hook to send a request to our new endpoint. We will provide the user's email as the body of our request.
+
+```jsx
+async function (user, context, callback) {
+  await request.post('http://localhost:3000/api/auth/hooks', {
+    body: JSON.stringify({
+      email: user.email,
+    })
+  });
+
+  callback(null, user, context);
+}
+```
+
+> Auth0 hooks like semicolons - you can choose what you prefer elsewhere but probably best to put them in here!
+
+Now let's trigger the hook by signing in with our Next.js application.
+
+**ERROR!**
+
+The problem is that this Auth0 hook is running on some remote Auth0 server, not our local machine. Therefore, it has no idea what localhost is. Ngrok to the rescue!
+
+## Ngrok
+
+This is a tool that forwards a public URL on the internet through to a specific port running on localhost (our Next.js dev server). This is often referred to as tunneling.
+
+We can install it using npm.
+
+```bash
+npm i -g ngrok
+```
+
+And then forward it to port :3000.
+
+```bash
+ngrok http 3000
+```
+
+This should give you a URL that you can use to replace "http://localhost:3000" in our Auth0 hook request.
+
+```jsx
+async function (user, context, callback) {
+  await request.post('https://0d4d01c96799.au.ngrok.io/api/auth/hooks', {
+    body: JSON.stringify({
+      email: user.email,
+    })
+  });
+
+  callback(null, user, context);
+}
+```
+
+Now you should be able to trigger a request to our new API route by going through the sign in flow with the Next.js app.
+
+> Remember to set this to your production URL when you deploy your app!
+
+You should see this logging out "created user" to the terminal console, but we're not yet doing that. Let's create a new user in Prisma.
+
+```jsx
+// pages/api/auth/hooks.js
+
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
+
+module.exports = async (req, res) => {
+  const { email } = JSON.parse(req.body);
+
+  const user = await prisma.user.create({
+    data: { email },
+  });
+
+  await prisma.$disconnect();
+
+  console.log("created user");
+  res.send({ received: true });
+};
+```
+
+Let's wrap that in a try, catch block just so that if we fail to create a user we still send a response to the hook and don't hold up the auth process.
+
+```jsx
+// pages/api/auth/hooks.js
+
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+module.exports = async (req, res) => {
+  try {
+    const { email } = JSON.parse(req.body);
+    const user = await prisma.user.create({
+      data: { email },
+    });
+    console.log("created user");
+  } catch (err) {
+    console.log(err);
+  } finally {
+    await prisma.$disconnect();
+    res.send({ received: true });
+  }
+};
+```
+
+> The finally block will run regardless of whether we successfully created a user or an exception was thrown. Writing cleanup logic here helps DRY up our code.
+
+This should now be creating a new user in Prisma every time a user logs in. Wait, EVERY SINGLE TIME?!?! that's no good!
+
+## Problem 1: New user every single login!
+
+Lucky we haven't pushed anything to prod. This one could have cost us some money in a high traffic application!
+
+We only want to create a user the first time time they login, therefore, we need some way to know whether we have successfully created a user in the past. We could expose another API route to ping the Prisma database and make sure a user with this email does not yet exist, but this would require another trip from Auth0 servers across to Vercel. We don't want to keep our user waiting unnecessarily.
+
+Thankfully, Auth0 give us the ability to set metadata on our user.
+
+We can set the metadata after creating the user like this.
+
+```jsx
+user.app_metadata = user.app_metadata || {};
+user.app_metadata.localUserCreated = true;
+```
+
+We need to manually tell Auth0 to persist this metadata like this.
+
+```jsx
+await auth0.users.updateAppMetadata(user.user_id, user.app_metadata);
+```
+
+And can read the metadata to make sure we want to create a user like this.
+
+```jsx
+if (!user.app_metadata.localUserCreated) {
+  // create prisma user
+}
+```
+
+The full rule should look something like this.
+
+```jsx
+async function (user, context, callback) {
+  user.app_metadata = user.app_metadata || {};
+
+  if (!user.app_metadata.localUserCreated) {
+    await request.post('https://0d4d01c96799.au.ngrok.io/api/auth/hooks', {
+      body: JSON.stringify({
+        email: user.email,
+      })
+    });
+    user.app_metadata.localUserCreated = true;
+    await auth0.users.updateAppMetadata(user.user_id, user.app_metadata);
+  }
+  callback(null, user, context);
+}
+```
+
+Let's also wrap that in a try catch block to make sure we respond if an exception is thrown.
+
+```jsx
+async function (user, context, callback) {
+  try {
+    user.app_metadata = user.app_metadata || {};
+
+    if (!user.app_metadata.localUserCreated) {
+      await request.post('https://0d4d01c96799.au.ngrok.io/api/auth/hooks', {
+        body: JSON.stringify({
+          email: user.email,
+        })
+      });
+      user.app_metadata.localUserCreated = true;
+      await auth0.users.updateAppMetadata(user.user_id, user.app_metadata);
+    }
+    callback(null, user, context);
+  } catch (err) {
+    callback(err);
+  }
+}
+```
+
+Great! So now anytime a user signs in and we do not have an account in prisma it will call our API route to create a user.
+
+WAIT! Do we just have an open API route that will create a user anytime we send a request to it?!? That's no good! How do we know this is coming from Auth0?!?
+
+## Problem 2: Our API Route to deal with authentication is not authenticated!
+
+Okay, there are a few ways we could solve this. You might think "isn't that what we have that Auth0 library for? Just wrap it in that withApiAuthRequired function you were raving about!"
+
+Since this is coming from Auth0, and not our Next.js app the session does not actually exist!
+
+We will need to manually send a secret value from the Auth0 hook and validate it is present and correct in the API route. This is a similar solution to something like API keys that map to a particular user.
+
+In the Rules menu we can create a new secret.
+
+import ruleSecret from "./rule-secret.png";
+
+<Image src={ruleSecret} alt="Adding secret for rule in Auth0 dashboard" />
+
+I recommend setting the value to a long [randomly generated string](https://onlinehashtools.com/generate-random-sha256-hash).
+
+Now we can access that value in our Auth0 Hook like this.
+
+```jsx
+configuration.AUTH0_HOOK_SECRET;
+```
+
+Let's post this across with our request to the API route.
+
+```jsx
+async function (user, context, callback) {
+  try {
+    user.app_metadata = user.app_metadata || {};
+
+    if (!user.app_metadata.localUserCreated) {
+      await request.post('https://0d4d01c96799.au.ngrok.io/api/auth/hooks', {
+        body: JSON.stringify({
+          email: user.email,
+          secret: configuration.AUTH0_HOOK_SECRET,
+        })
+      });
+      user.app_metadata.localUserCreated = true;
+      await auth0.users.updateAppMetadata(user.user_id, user.app_metadata);
+    }
+    callback(null, user, context);
+  } catch (err) {
+    callback(err);
+  }
+}
+```
+
+Now we need to update our Next.js app's .env file to contain this value.
+
+```
+// .env
+
+// other secrets
+AUTH0_HOOK_SECRET=that-super-secret-value-that-no-one-else-knows
+```
+
+And wrap our create user logic in a check to make sure that value is correct.
+
+```jsx
+const { email, secret } = JSON.parse(req.body);
+
+if (secret === process.env.AUTH0_HOOK_SECRET) {
+  // create user
+} else {
+  console.log("You forgot to send me your secret!");
+}
+```
+
+The whole API route should look something like this.
+
+```jsx
+// pages/api/auth/hooks.js
+
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+module.exports = async (req, res) => {
+  try {
+    const { email, secret } = JSON.parse(req.body);
+
+    if (secret === process.env.AUTH0_HOOK_SECRET) {
+      const user = await prisma.user.create({
+        data: { email },
+      });
+
+      console.log("created user");
+    } else {
+      console.log("You forgot to send me your secret!");
+    }
+  } catch (err) {
+    console.log(err);
+  } finally {
+    await prisma.$disconnect();
+
+    res.send({ received: true });
+  }
+};
+```
+
+Follow the same logic from [Hosting on Vercel, automatic deploys with GitHub and configuring custom domains](https://jonmeyers.io/blog/build-a-saas-platform-with-stripe/hosting-on-vercel-automatic-deploys-with-github-and-configuring-custom-domains) to add our new Auth0 environment variables in Vercel - without this our hosted application will not work.
+
+Excellent! That's it! We did it!
+
+Now anytime a new user logs into our Next.js application, Auth0 will let us know so we can create a user in our Prisma database, to keep a track of those extra bits of data that our application cares about!
+
+## Next week
+
+[Processing payments with Stripe and webhooks](https://jonmeyers.io/blog/build-a-saas-platform-with-stripe/processing-payments-with-stripe-and-webhooks)

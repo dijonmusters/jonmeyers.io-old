@@ -1,0 +1,20 @@
+---
+const props = Astro.props;
+---
+
+<code {...props}><slot /></code>
+
+<!-- This style block is intentional - I can't work out how to do this in Tailwind  -->
+
+<style>
+  code:not(pre > code) {
+    background: #2f2f2f;
+    color: #efefef;
+    padding: 0.5rem 0.5rem;
+    border-radius: 6px;
+  }
+  code:not(pre > code):before,
+  code:not(pre > code):after {
+    display: none;
+  }
+</style>

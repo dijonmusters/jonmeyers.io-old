@@ -1,0 +1,238 @@
+---
+title: Hosting on Vercel, automatic deploys with GitHub and configuring custom domains
+og_title: Hosting, automatic deploys and custom domains
+description: This week we are focusing on all things hosting! We will step through hosting our next.js application on Vercel, automatically triggering new deploys when we make code changes in GitHub, and configuring a custom domain to fit our brand!
+published_date: 2021-04-21
+tags:
+  - Next.js
+---
+
+import { Image } from "astro:assets";
+
+import ToC from "../../../components/ToC.astro";
+
+<ToC
+  title="Build a SaaS Platform with Next.js, Prisma, Auth0 and Stripe (series)"
+  list={[
+    {
+      title: "Tech stack and initial project setup",
+      url: "/blog/tech-stack-and-initial-project-setup",
+    },
+    {
+      title:
+        "Hosting on Vercel, automatic deploys with GitHub and configuring custom domains",
+      url: "/blog/hosting-on-vercel-automatic-deploys-with-github-and-configuring-custom-domains",
+      isCurrent: true,
+    },
+    {
+      title: "Authentication with Auth0 and Next.js",
+      url: "/blog/authentication-with-auth0-and-next-js",
+    },
+    {
+      title: "Social login with GitHub and Auth0 rules",
+      url: "/blog/social-login-with-github-and-auth0-rules",
+    },
+    {
+      title: "Processing payments with Stripe and webhooks",
+      url: "/blog/processing-payments-with-stripe-and-webhooks",
+    },
+    {
+      title: "Implementing subscriptions with Stripe",
+      url: "/blog/implementing-subscriptions-with-stripe",
+    },
+  ]}
+/>
+
+[Project repo](https://github.com/dijonmusters/courses)
+
+This week we are focusing on all things hosting: making our next.js application available to the world wide webs; setting up automatic deploys when we change code; and configuring a custom domain!
+
+## Build app
+
+We can build a production version of our application by running the build script - this is what our hosting platform will use too!
+
+```bash
+npm run build
+```
+
+ERROR!
+
+This is giving us the following error.
+
+```
+Error: connect ECONNREFUSED 127.0.0.1:80
+```
+
+And that's because I made a small blunder in our first week! We are trying to load data from a serverless function, but that serverless function is also built when we build a new version of our application. This would be fine if the "building the serverless functions" step came before the "build our next app" step, but unfortunately that is not the case!
+
+> This worked locally because Next.js does some performance magic and rebuilds the page when we request it by refreshing the browser.
+
+Looks like we can't read data for our pre-rendered/statically generated pages from our serverless functions, but that is okay! Every one of our getStaticProps functions is actually a little chunk of server-side logic so we can just build our Prisma queries there!
+
+Let's create a new utils folder at the root of our project and add a db.js file with the following content.
+
+```jsx
+// utils/db.js
+
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+const getCourses = () =>
+  prisma.course.findMany({
+    include: {
+      lessons: true,
+    },
+  });
+
+export { getCourses };
+```
+
+Now we can import our getCourses function and call it in our getStaticProps function.
+
+```jsx
+// pages/index.js
+
+import CourseList from "components/CourseList";
+import { getCourses } from "../utils/db";
+
+const Index = ({ courses }) => {
+  return (
+    <div>
+      <h1>Courses</h1>
+      <pre>{JSON.stringify(courses, null, 2)}</pre>
+    </div>
+  );
+};
+
+export const getStaticProps = async () => {
+  const data = await getCourses();
+
+  return {
+    props: {
+      courses: data,
+    },
+  };
+};
+
+export default Index;
+```
+
+Let's run that build again!
+
+```bash
+npm run build
+```
+
+MORE ERRORS!
+
+```
+Error: Error serializing `.courses[0].createdAt` returned from `getStaticProps` in "/".
+Reason: `object` ("[object Date]") cannot be serialized as JSON. Please only return JSON serializable data types.
+```
+
+Okay, this is a weird one but basically when the createdAt date comes back from Prisma, Next.js attempts to turn it into a string (serializing) and is not happy.
+
+A quick trick we can use here is manually stringify the courses we get back from Prisma and then parse them back into json.
+
+```jsx
+// pages/index.js
+
+import { getCourses } from "../utils/db";
+
+// other component stuff
+
+export const getStaticProps = async () => {
+  const data = await getCourses();
+
+  return {
+    props: {
+      courses: JSON.parse(JSON.stringify(data)),
+    },
+  };
+};
+```
+
+Our whole component should look something like this.
+
+```jsx
+// pages/index.js
+
+import { getCourses } from "../utils/db";
+
+const Index = ({ courses }) => {
+  return (
+    <div>
+      <h1>Courses</h1>
+      <pre>{JSON.stringify(courses, null, 2)}</pre>
+    </div>
+  );
+};
+
+export const getStaticProps = async () => {
+  const data = await getCourses();
+
+  return {
+    props: {
+      courses: JSON.parse(JSON.stringify(data)),
+    },
+  };
+};
+
+export default Index;
+```
+
+And run that build one last time!
+
+```bash
+npm run build
+```
+
+NO ERRORS!
+
+Yay! Our application is building properly! We can run `npm start` to run the production build locally and make sure it looks good in the browser.
+
+This is now hostable! But where to host?!?
+
+## Vercel
+
+We need to actually host our application to get a public URL that we can give to someone with an internet connection, so they can see our super dope site!
+
+There are many serverless hosting providers to choose from. My two favourites are Netlify and Vercel. They are both super focused on developer experience and have exceptional free tiers! Absolutely free to get started and you would need to have a pretty successful app to get to the point where you need to pay! Next.js can be hosted on either of these platforms, however, I find Vercel tends to implement new Next.js features a little ahead of Netlify (probably because they're also the creators of Next.js!), so I am going to use them for this SaaS project.
+
+You will need to create an account with Vercel and install the CLI tool with the following command.
+
+```bash
+npm i -g vercel
+```
+
+Now you can login.
+
+```bash
+vercel login
+```
+
+And deploy your application.
+
+```bash
+vercel --prod
+```
+
+This will step you through a few questions about the project. You can just accept all the default options, since Vercel is very much optimised to host Next.js applications!
+
+That's it! Super simple!
+
+## Environment Variables
+
+When running locally we have been using our DB connection string to connect our API to Supabase's DB instance. This value is being read into our application from the .env file, but we have intentionally excluded this from our GitHub repo, as this value would give anyone read/write access to our DB. This means Vercel does not know about this value and therefore cannot connect to our DB instance. Let's add this environment variable to Vercel.
+
+Head over to the Vercel dashboard for you application and go to `Settings > Environment Variables`.
+
+Enter `DATABASE_URL` as the name and your connection string as the value.
+
+import environmentVariables from "./environment-variables.png";
+
+<Image
+  src={environmentVariables}
+  alt="Adding environment variable for `DATABASE_URL` in Vercel dashboard"
+/>

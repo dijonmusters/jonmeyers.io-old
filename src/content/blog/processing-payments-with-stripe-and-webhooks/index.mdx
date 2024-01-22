@@ -1,0 +1,672 @@
+---
+title: Processing payments with Stripe and webhooks
+og_title: Processing payments with Stripe and webhooks
+description: This week is all about processing card payments with Stripe. We look at creating a session and subscribing to webhooks in order to know when a user has purchased a course.
+published_date: 2021-05-12
+tags:
+  - Next.js
+---
+
+import ToC from "../../../components/ToC.astro";
+
+<ToC
+  title="Build a SaaS Platform with Next.js, Prisma, Auth0 and Stripe (series)"
+  list={[
+    {
+      title: "Tech stack and initial project setup",
+      url: "/blog/tech-stack-and-initial-project-setup",
+    },
+    {
+      title:
+        "Hosting on Vercel, automatic deploys with GitHub and configuring custom domains",
+      url: "/blog/hosting-on-vercel-automatic-deploys-with-github-and-configuring-custom-domains",
+    },
+    {
+      title: "Authentication with Auth0 and Next.js",
+      url: "/blog/authentication-with-auth0-and-next-js",
+    },
+    {
+      title: "Social login with GitHub and Auth0 rules",
+      url: "/blog/social-login-with-github-and-auth0-rules",
+    },
+    {
+      title: "Processing payments with Stripe and webhooks",
+      url: "/blog/processing-payments-with-stripe-and-webhooks",
+      isCurrent: true,
+    },
+    {
+      title: "Implementing subscriptions with Stripe",
+      url: "/blog/implementing-subscriptions-with-stripe",
+    },
+  ]}
+/>
+
+[Project repo](https://github.com/dijonmusters/courses)
+
+This week is all about taking payments with Stripe. We will implement a serverless function to charge a card and implement webhooks to update our Prisma user with courses they have purchased.
+
+## Extending User schema
+
+In order to track which courses a user has purchased we will need to extend our User schema to contain a field for `stripeId`.
+
+```jsx
+// prisma/schema.prisma
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  courses      Course[]
+  stripeId     String        @unique
+  createdAt    DateTime      @default(now())
+}
+```
+
+This will be used to map a Prisma user to a Stripe customer.
+
+> This modification will temporarily break our application as a `stripeId` is now a required field, and we are not setting one when we create a user in our application.
+
+Let's create a migration to apply these changes to our DB.
+
+```bash
+npx prisma migrate dev --name add-stripe-id-to-user --preview-feature
+```
+
+## Setting up Stripe
+
+First thing you will need to do is [create a Stripe account](https://dashboard.stripe.com/register).
+
+Once you have created an account and have landed on your Stripe dashboard, you will need to enter your business's details in order to activate your account. This will give you access to production API keys and allow you to process real payments. You do not need to activate your account to complete this series, but something you may want to do if you want to use this in the real world!
+
+Next we need to install the two Stripe libraries in our application.
+
+```bash
+npm i stripe @stripe/stripe-js
+```
+
+> `stripe` is a backend library that we will use to process payments, and `@stripe/stripe-js` is a frontend library that our client will use to initiate a payment session.
+
+Now we need to modify our .env file to add our new API keys - these can be found in the Stripe dashboard under the "Get your API keys" panel. Make sure you use the "test" keys for local development.
+
+```
+// .env
+
+// other secrets
+STRIPE_SECRET_KEY=your-secret-key
+NEXT_PUBLIC_STRIPE_PUBLIC_KEY=your-publishable-key
+```
+
+> We must prepend frontend environment variables with `NEXT_PUBLIC_`. Variables that do not contain this will only be available to our serverless functions.
+
+Follow the same logic from [Hosting on Vercel, automatic deploys with GitHub and configuring custom domains](https://jonmeyers.io/blog/build-a-saas-platform-with-stripe/hosting-on-vercel-automatic-deploys-with-github-and-configuring-custom-domains) to add environment variables in Vercel - without this our hosted application will not work.
+
+Great! Now we should have stripe wired up!
+
+## Create Stripe customer
+
+We will need to create a Stripe customer to keep a track of purchases and whether a subscription is active. We could do this when the user makes their first purchase, however, we do not know whether that will be when they purchase a particular course or activate their subscription. This would require us to add some logic to each of our payment scenarios to first check if a stripe user exists before charging their account. We can simplify this logic greatly by just creating a Stripe customer at the same time as our Prisma user - the first time a new user signs in to our application.
+
+Let's modify our auth hook to create a stripe customer before we create a user in Prisma. That way we can use the newly created Stripe ID to create our user.
+
+```jsx
+// pages/api/auth/hooks.js
+
+// other imports
+
+import initStripe from "stripe";
+const stripe = initStripe(process.env.STRIPE_SECRET_KEY);
+
+module.exports = async (req, res) => {
+  // other auth code
+  const customer = await stripe.customers.create({
+    email,
+  });
+
+  const user = await prisma.user.create({
+    data: { email, stripeId: customer.id },
+  });
+};
+```
+
+The whole file should look something like this.
+
+```jsx
+// pages/api/auth/hooks.js
+
+import { PrismaClient } from "@prisma/client";
+import initStripe from "stripe";
+
+const prisma = new PrismaClient();
+const stripe = initStripe(process.env.STRIPE_SECRET_KEY);
+
+module.exports = async (req, res) => {
+  try {
+    const { email, secret } = JSON.parse(req.body);
+
+    if (secret === process.env.AUTH0_HOOK_SECRET) {
+      const customer = await stripe.customers.create({
+        email,
+      });
+
+      const user = await prisma.user.create({
+        data: { email, stripeId: customer.id },
+      });
+
+      console.log("created user");
+    } else {
+      console.log("You forgot to send me your secret!");
+    }
+  } catch (err) {
+    console.log(err);
+  } finally {
+    await prisma.$disconnect();
+
+    res.send({ received: true });
+  }
+};
+```
+
+Great, now anytime a new user signs in we should be creating a Stripe customer, then a Prisma user that has a reference to the customer's ID.
+
+## Charging a card with Stripe
+
+Now we want to build a serverless function that can process a payment for a particular course. We will need to tell this function which course the user is purchasing, so will use a Dynamic API Route to pass in the course ID. Let's create a new serverless function at `/pages/api/charge-card/[courseId].js`.
+
+```jsx
+// pages/api/charge-card/[courseId].js
+
+module.exports = async (req, res) => {
+  const { courseId } = req.query;
+  res.send(`charging card for course ${courseId}`);
+};
+```
+
+> You can trigger this serverless function by going to `http://localhost:3000/api/charge-card/any-value-you-want`. In this case it should print out "charging card for course any-value-you-want".
+
+The next step would be working out how much we need to charge for the course. We could just pass this along with the request from the frontend, however, this could easily be tinkered with by the user.
+
+**We can't trust anything from the client!**
+
+Let's make a call to our Prisma DB to find out the real price.
+
+```jsx
+// pages/api/charge-card/[courseId].js
+
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+module.exports = async (req, res) => {
+  const { courseId } = req.query;
+
+  const course = prisma.course.findUnique({
+    where: {
+      id: parseInt(courseId),
+    },
+  });
+
+  await prisma.$disconnect();
+
+  res.send(`charging ${course.price} cents for ${courseId}`);
+};
+```
+
+> We use `parseInt()` here to turn the string we get from the req's query into an integer, which Prisma is expecting for the ID.
+
+Next we want to know who the user is that is purchasing this course. This means we want the API route to only be accessible by logged in users. Let's wrap it in `withApiAuthRequired` and work out who the user is by their session email.
+
+```jsx
+// pages/api/charge-card/[courseId].js
+
+import { PrismaClient } from "@prisma/client";
+import { withApiAuthRequired, getSession } from "@auth0/nextjs-auth0";
+
+const prisma = new PrismaClient();
+
+module.exports = withApiAuthRequired(async (req, res) => {
+  const { courseId } = req.query;
+
+  const {
+    user: { email },
+  } = getSession(req, res);
+
+  const course = prisma.course.findUnique({
+    where: {
+      id: parseInt(courseId),
+    },
+  });
+
+  const user = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+
+  await prisma.$disconnect();
+
+  res.send(`charging ${user.email} ${course.price} cents for ${courseId}`);
+});
+```
+
+Next we want to tell Stripe what we are actually charging the customer. We do this by creating a list of line items and a payment session.
+
+```jsx
+// pages/api/charge-card/[courseId].js
+
+// other imports
+
+import initStripe from 'stripe'
+
+const stripe = initStripe(process.env.STRIPE_SECRET_KEY)
+
+module.exports = async (req, res) => {
+  // course and user stuff
+
+  const lineItems = [
+    {
+      price_data: {
+        currency: 'aud', // swap this out for your currency
+        product_data: {
+          name: course.title,
+        },
+        unit_amount: course.price,
+      },
+      quantity: 1,
+    },
+  ]
+
+  const session = await stripe.checkout.sessions.create({
+    customer: user.stripeId,
+    payment_method_types: ['card'],
+    line_items: lineItems,
+    mode: 'payment',
+    success_url: `${process.env.CLIENT_URL}/success`,
+    cancel_url: `${process.env.CLIENT_URL}/cancelled`,
+  })
+
+  res.json({ id: session.id })
+})
+```
+
+We need to provide a success and cancel url for stripe to forward the user to. These will need to be created at `pages/success.js` and `pages/cancelled.js`. Additionally, we need to create an environment variable for CLIENT_URL. Follow the previous steps to add this to the .env with the value `http://localhost:3000`, and a new environment variable in Vercel with the value of whatever your hosted URL is - mine is `https://courses-saas.vercel.app`.
+
+Lastly we want to wrap all of this in a try/catch block in case something goes wrong. The whole file should look something like this.
+
+```jsx
+// pages/api/charge-card/[courseId].js
+
+import { withApiAuthRequired, getSession } from "@auth0/nextjs-auth0";
+import { PrismaClient } from "@prisma/client";
+import initStripe from "stripe";
+
+const prisma = new PrismaClient();
+const stripe = initStripe(process.env.STRIPE_SECRET_KEY);
+
+module.exports = withApiAuthRequired(async (req, res) => {
+  try {
+    const { courseId } = req.query;
+    const {
+      user: { email },
+    } = getSession(req, res);
+
+    const course = prisma.course.findUnique({
+      where: {
+        id: parseInt(courseId),
+      },
+    });
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    const lineItems = [
+      {
+        price_data: {
+          currency: "aud", // swap this out for your currency
+          product_data: {
+            name: course.title,
+          },
+          unit_amount: course.price,
+        },
+        quantity: 1,
+      },
+    ];
+
+    const session = await stripe.checkout.sessions.create({
+      customer: user.stripeId,
+      payment_method_types: ["card"],
+      line_items: lineItems,
+      mode: "payment",
+      success_url: `${process.env.CLIENT_URL}/success`,
+      cancel_url: `${process.env.CLIENT_URL}/cancelled`,
+    });
+
+    res.json({ id: session.id });
+  } catch (err) {
+    res.send(err);
+  } finally {
+    await prisma.$disconnect();
+  }
+});
+```
+
+Next we need to add a function in our frontend to trigger this payment. This block can be triggered from a button click anywhere in the app, and just needs to be passed a course ID to initiate the payment with Stripe.
+
+```jsx
+import { loadStripe } from "@stripe/stripe-js";
+import axios from "axios";
+
+const processPayment = async (courseId) => {
+  const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
+  const { data } = await axios.get(`/api/charge-card/${courseId}`);
+  await stripe.redirectToCheckout({ sessionId: data.id });
+};
+```
+
+Lastly, we want to know when a course has been purchased so that we can update our user in Prisma. This is made possible by Stripe's webhooks. Similarly to our Auth0 hook, we can subscribe to particular events, and when that happens Stripe will call our serverless function and tell us which user purchased a particular course.
+
+We get a lot of data from Stripe about the transaction itself, but not which course or Prisma user. Let's modify our charge-card function to pass this across as metadata with the session.
+
+```jsx
+// pages/api/charge-card/[courseId].js
+
+const session = await stripe.checkout.sessions.create({
+  // other session stuff
+
+  payment_intent_data: {
+    metadata: {
+      userId: user.id,
+      courseId,
+    },
+  },
+});
+```
+
+The whole file should look something like this.
+
+```jsx
+// pages/api/charge-card/[courseId].js
+
+import { withApiAuthRequired, getSession } from "@auth0/nextjs-auth0";
+import { PrismaClient } from "@prisma/client";
+import initStripe from "stripe";
+
+const prisma = new PrismaClient();
+const stripe = initStripe(process.env.STRIPE_SECRET_KEY);
+
+module.exports = withApiAuthRequired(async (req, res) => {
+  try {
+    const { courseId } = req.query;
+
+    const {
+      user: { email },
+    } = getSession(req, res);
+
+    const course = prisma.course.findUnique({
+      where: {
+        id: parseInt(courseId),
+      },
+    });
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    const lineItems = [
+      {
+        price_data: {
+          currency: "aud", // swap this out for your currency
+          product_data: {
+            name: course.title,
+          },
+          unit_amount: course.price,
+        },
+        quantity: 1,
+      },
+    ];
+
+    const session = await stripe.checkout.sessions.create({
+      customer: user.stripeId,
+      payment_method_types: ["card"],
+      line_items: lineItems,
+      mode: "payment",
+      success_url: `${process.env.CLIENT_URL}/success`,
+      cancel_url: `${process.env.CLIENT_URL}/cancelled`,
+      payment_intent_data: {
+        metadata: {
+          userId: user.id,
+          courseId,
+        },
+      },
+    });
+
+    res.json({ id: session.id });
+  } catch (err) {
+    res.send(err);
+  } finally {
+    await prisma.$disconnect();
+  }
+});
+```
+
+Now we can create an API route that can deal with these events from Stripe.
+
+```jsx
+// pages/api/stripe-hooks
+
+export default async (req, res) => {
+  // check what kind of event stripe has sent us
+  res.send({ received: true });
+};
+```
+
+So that we don't get ourselves into the same problem we had with Auth0 Hooks, let's implement a signing secret to confirm that the request is coming from Stripe.
+
+Let's first install the Stripe CLI to be able to simulate a webhook event. If you have macOS and homebrew installed, we can run this command.
+
+```bash
+brew install stripe/stripe-cli/stripe
+```
+
+Now run the following to authenticate the CLI with Stripe.
+
+```bash
+stripe login
+```
+
+Now we should be able to run the following to forward webhook events to our localhost.
+
+```bash
+stripe listen --forward-to localhost:3000/api/stripe-hooks
+```
+
+This will print out a signing secret to the terminal. Copy this into your .env file with the name `STRIPE_SIGNING_SECRET`.
+
+```
+// .env
+
+// other secrets
+STRIPE_SIGNING_SECRET=your-webhook-signing-secret
+```
+
+Stripe provides a handy helper function called `constructEvent` that can confirm whether this request was sent from them. Unfortunately, there is a little bit of tinkering we need to do to get this working in Next.js. [Here is a really good guide](https://codedaily.io/tutorials/Stripe-Webhook-Verification-with-NextJS) that steps through the process.
+
+Let's start by installing `micro`.
+
+```bash
+npm i micro
+```
+
+Now we can update our stripe-hooks API route to validate the request is coming from Stripe.
+
+```jsx
+// pages/api/stripe-hooks
+
+import initStripe from "stripe";
+import { buffer } from "micro";
+
+const stripe = initStripe(process.env.STRIPE_SECRET_KEY);
+
+export const config = { api: { bodyParser: false } };
+
+export default async (req, res) => {
+  const reqBuffer = await buffer(req);
+  const signature = req.headers["stripe-signature"];
+  const signingSecret = process.env.STRIPE_SIGNING_SECRET;
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(reqBuffer, signature, signingSecret);
+  } catch (err) {
+    console.log(err);
+
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // check what kind of event stripe has sent us
+
+  res.send({ received: true });
+};
+```
+
+The `req` object from Vercel is not structured the way Stripe is expecting, so does not validate properly unless we do a bit of work.
+
+> stripe.webhooks.constructEvent() is a function that Stripe recommends using to confirm that they have sent this request. If it can validate this then it returns the Stripe event, otherwise it will throw an exception, and we will return a 400 status code. Read more [here](https://stripe.com/docs/webhooks/signatures).
+
+Okay, so now we can forget all about that validation and focus on processing the event we are receiving from Stripe.
+
+```jsx
+// pages/api/stripe-hooks
+
+export default async (req, res) => {
+  // signing logic
+  switch (event.type) {
+    case "charge.succeeded":
+      // update user in prisma
+      console.log("charge succeeded");
+      break;
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+};
+```
+
+> `event.type` will contain a string for the event that has been triggered. We will extend this later for subscriptions so are using a case statement to keep it clear.
+
+We can test that this is working by running the following command in a new terminal window - this requires the `stripe listen` and `npm run dev` commands to be running.
+
+```bash
+stripe trigger charge.succeeded
+```
+
+This should print out "charge succeeded" to the console.
+
+Next we need to pull the user and course ID out of the metadata, and update the user's courses they have purchased in Prisma.
+
+```jsx
+// pages/api/stripe-hooks
+
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+export default async (req, res) => {
+  // signing logic
+
+  const { metadata } = event.data.object;
+
+  switch (event.type) {
+    case "charge.succeeded":
+      // update user in prisma
+      if (metadata?.userId && metadata?.courseId) {
+        const user = await prisma.user.update({
+          where: {
+            id: parseInt(metadata.userId),
+          },
+          data: {
+            courses: {
+              connect: {
+                id: parseInt(metadata.courseId),
+              },
+            },
+          },
+        });
+      }
+      break;
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+};
+```
+
+> `connect` is used to insert an existing course ID into the array of courses for the user. If we wanted to create this course then we would use `create`. THIS IS HERE
+
+The full file should look something like this.
+
+```jsx
+// pages/api/stripe-hooks
+
+import initStripe from "stripe";
+import { buffer } from "micro";
+import { PrismaClient } from "@prisma/client";
+
+const stripe = initStripe(process.env.STRIPE_SECRET_KEY);
+const prisma = new PrismaClient();
+
+export const config = { api: { bodyParser: false } };
+
+export default async (req, res) => {
+  const reqBuffer = await buffer(req);
+  const signature = req.headers["stripe-signature"];
+  const signingSecret = process.env.STRIPE_SIGNING_SECRET;
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(reqBuffer, signature, signingSecret);
+  } catch (err) {
+    console.log(err);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  const { metadata } = event.data.object;
+
+  switch (event.type) {
+    case "charge.succeeded":
+      // update user in prisma
+      if (metadata?.userId && metadata?.courseId) {
+        const user = await prisma.user.update({
+          where: {
+            id: parseInt(metadata.userId),
+          },
+          data: {
+            courses: {
+              connect: {
+                id: parseInt(metadata.courseId),
+              },
+            },
+          },
+        });
+      }
+      break;
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+
+  res.send({ received: true });
+};
+```
+
+Now we should have a complete solution where we can trigger a payment for a particular course in our app - we need to do it from the app, rather than the CLI so that it includes our metadata. This will make a request to our charge-card serverless function to create a payment session for that course. The user should then be taken to Stripe's UI where they can enter their credit card details, and then be redirected to our success page after they have been charged. In the background Stripe will call our webhook serverless function, which will update our Prisma user with the newly purchased course!
+
+Amazing! And our app doesn't need to know anything about our users' credit card details!
+
+> The [Stripe documentation](https://stripe.com/docs/api) is fantastic and I highly recommend checking out all the awesome things you can do beyond what we cover in this series!
+
+## Next week
+
+[Implementing subscriptions with Stripe](https://jonmeyers.io/blog/build-a-saas-platform-with-stripe/implementing-subscriptions-with-stripe)
